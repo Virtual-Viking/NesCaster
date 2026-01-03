@@ -7,10 +7,11 @@
 //
 
 import Foundation
+import QuartzCore
 
 // MARK: - NES Button Mapping
 
-struct NESInput: OptionSet {
+struct NESInput: OptionSet, Sendable {
     let rawValue: UInt8
     
     static let a      = NESInput(rawValue: 1 << 0)
@@ -25,7 +26,7 @@ struct NESInput: OptionSet {
 
 // MARK: - Emulator State
 
-enum EmulatorState {
+enum EmulatorState: Sendable {
     case idle
     case running
     case paused
@@ -79,12 +80,6 @@ class NESEmulatorCore: ObservableObject {
         print("🎮 NESEmulatorCore initialized")
         // TODO: Initialize Mesen core library
         // MesenCore.initialize()
-    }
-    
-    deinit {
-        stop()
-        // TODO: Cleanup Mesen core
-        // MesenCore.shutdown()
     }
     
     // MARK: - ROM Management
@@ -165,11 +160,11 @@ class NESEmulatorCore: ObservableObject {
     // MARK: - Emulation Loop
     
     private func emulationLoop() async {
-        while case .running = await state {
+        while await checkIsRunning() {
             let frameStart = CACurrentMediaTime()
             
             // Run one frame
-            await runFrame()
+            runFrame()
             
             // Frame timing
             let frameEnd = CACurrentMediaTime()
@@ -182,12 +177,20 @@ class NESEmulatorCore: ObservableObject {
             }
             
             // Update performance metrics
-            await updatePerformanceMetrics(frameDuration: elapsed)
+            updatePerformanceMetrics(frameDuration: elapsed)
         }
     }
     
+    /// Check if emulator is running (called from async context)
+    private func checkIsRunning() async -> Bool {
+        if case .running = state {
+            return true
+        }
+        return false
+    }
+    
     /// Run a single frame of emulation
-    private func runFrame() async {
+    private func runFrame() {
         // TODO: Replace with actual Mesen core call
         // MesenCore.runFrame(controller1Input.rawValue, controller2Input.rawValue)
         // MesenCore.getFrameBuffer(&frameBuffer)
@@ -196,10 +199,8 @@ class NESEmulatorCore: ObservableObject {
         generateTestFrame()
         
         // Notify renderer
-        await MainActor.run {
-            frameBuffer.withUnsafeBufferPointer { ptr in
-                onFrameReady?(ptr.baseAddress!)
-            }
+        frameBuffer.withUnsafeBufferPointer { ptr in
+            onFrameReady?(ptr.baseAddress!)
         }
     }
     
@@ -271,14 +272,12 @@ class NESEmulatorCore: ObservableObject {
     
     // MARK: - Performance Metrics
     
-    private func updatePerformanceMetrics(frameDuration: Double) async {
+    private func updatePerformanceMetrics(frameDuration: Double) {
         frameTime = frameDuration * 1000 // Convert to ms
         
         let now = CACurrentMediaTime()
         if now - fpsUpdateTimer >= 1.0 {
-            await MainActor.run {
-                fps = Double(frameCount) / (now - fpsUpdateTimer)
-            }
+            fps = Double(frameCount) / (now - fpsUpdateTimer)
             frameCount = 0
             fpsUpdateTimer = now
         }
@@ -306,37 +305,3 @@ enum EmulatorError: LocalizedError {
         }
     }
 }
-
-// MARK: - Mesen Core Bridge (Placeholder)
-
-/// This will be the C/C++ bridge to Mesen core
-/// Using @_cdecl or Objective-C++ wrapper
-///
-/// Example C interface:
-/// ```c
-/// void mesen_init(void);
-/// void mesen_shutdown(void);
-/// bool mesen_load_rom(const uint8_t* data, size_t size);
-/// void mesen_run_frame(uint8_t controller1, uint8_t controller2);
-/// void mesen_get_frame_buffer(uint8_t* buffer);
-/// void mesen_get_audio_buffer(int16_t* buffer, int* sample_count);
-/// ```
-
-/*
-// Future implementation with bridging header:
- 
-import MesenCore // C++ library
-
-extension NESEmulatorCore {
-    private func initializeMesenCore() {
-        mesen_init()
-    }
-    
-    private func loadROMToCore(_ data: Data) -> Bool {
-        return data.withUnsafeBytes { ptr in
-            mesen_load_rom(ptr.baseAddress, data.count)
-        }
-    }
-}
-*/
-

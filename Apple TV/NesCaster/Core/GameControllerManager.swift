@@ -53,7 +53,9 @@ class GameControllerManager: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] notification in
                 if let controller = notification.object as? GCController {
-                    self?.controllerConnected(controller)
+                    Task { @MainActor in
+                        self?.controllerConnected(controller)
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -63,7 +65,9 @@ class GameControllerManager: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] notification in
                 if let controller = notification.object as? GCController {
-                    self?.controllerDisconnected(controller)
+                    Task { @MainActor in
+                        self?.controllerDisconnected(controller)
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -72,7 +76,9 @@ class GameControllerManager: ObservableObject {
     private func discoverControllers() {
         GCController.startWirelessControllerDiscovery { [weak self] in
             print("🎮 Controller discovery completed")
-            self?.updateConnectedControllers()
+            Task { @MainActor in
+                self?.updateConnectedControllers()
+            }
         }
     }
     
@@ -126,45 +132,63 @@ class GameControllerManager: ObservableObject {
         
         // D-Pad
         gamepad.dpad.valueChangedHandler = { [weak self] _, xValue, yValue in
-            self?.updateDPad(x: xValue, y: yValue, controller: controllerIndex)
+            Task { @MainActor in
+                self?.updateDPad(x: xValue, y: yValue, controller: controllerIndex)
+            }
         }
         
         // Left Thumbstick (alternative to D-Pad)
         gamepad.leftThumbstick.valueChangedHandler = { [weak self] _, xValue, yValue in
-            self?.updateDPad(x: xValue, y: yValue, controller: controllerIndex)
+            Task { @MainActor in
+                self?.updateDPad(x: xValue, y: yValue, controller: controllerIndex)
+            }
         }
         
         // A Button (NES A)
         gamepad.buttonA.valueChangedHandler = { [weak self] _, _, pressed in
-            self?.updateButton(.a, pressed: pressed, controller: controllerIndex)
+            Task { @MainActor in
+                self?.updateButton(.a, pressed: pressed, controller: controllerIndex)
+            }
         }
         
         // B Button / X Button (NES B)
         gamepad.buttonB.valueChangedHandler = { [weak self] _, _, pressed in
-            self?.updateButton(.b, pressed: pressed, controller: controllerIndex)
+            Task { @MainActor in
+                self?.updateButton(.b, pressed: pressed, controller: controllerIndex)
+            }
         }
         gamepad.buttonX.valueChangedHandler = { [weak self] _, _, pressed in
-            self?.updateButton(.b, pressed: pressed, controller: controllerIndex)
+            Task { @MainActor in
+                self?.updateButton(.b, pressed: pressed, controller: controllerIndex)
+            }
         }
         
         // Y Button (Alternative NES A - turbo)
         gamepad.buttonY.valueChangedHandler = { [weak self] _, _, pressed in
-            self?.updateButton(.a, pressed: pressed, controller: controllerIndex)
+            Task { @MainActor in
+                self?.updateButton(.a, pressed: pressed, controller: controllerIndex)
+            }
         }
         
         // Shoulder buttons for Select/Start
         gamepad.leftShoulder.valueChangedHandler = { [weak self] _, _, pressed in
-            self?.updateButton(.select, pressed: pressed, controller: controllerIndex)
+            Task { @MainActor in
+                self?.updateButton(.select, pressed: pressed, controller: controllerIndex)
+            }
         }
         
         gamepad.rightShoulder.valueChangedHandler = { [weak self] _, _, pressed in
-            self?.updateButton(.start, pressed: pressed, controller: controllerIndex)
+            Task { @MainActor in
+                self?.updateButton(.start, pressed: pressed, controller: controllerIndex)
+            }
         }
         
         // Menu button
         gamepad.buttonMenu.valueChangedHandler = { [weak self] _, _, pressed in
             if pressed {
-                self?.onMenuButtonPressed?()
+                Task { @MainActor in
+                    self?.onMenuButtonPressed?()
+                }
             }
         }
     }
@@ -175,23 +199,31 @@ class GameControllerManager: ObservableObject {
         
         // Touch surface as D-Pad
         microGamepad.dpad.valueChangedHandler = { [weak self] _, xValue, yValue in
-            self?.updateDPad(x: xValue, y: yValue, controller: 1)
+            Task { @MainActor in
+                self?.updateDPad(x: xValue, y: yValue, controller: 1)
+            }
         }
         
         // Play/Pause button (NES Start)
         microGamepad.buttonA.valueChangedHandler = { [weak self] _, _, pressed in
-            self?.updateButton(.a, pressed: pressed, controller: 1)
+            Task { @MainActor in
+                self?.updateButton(.a, pressed: pressed, controller: 1)
+            }
         }
         
         // Select button (NES Select)
         microGamepad.buttonX.valueChangedHandler = { [weak self] _, _, pressed in
-            self?.updateButton(.b, pressed: pressed, controller: 1)
+            Task { @MainActor in
+                self?.updateButton(.b, pressed: pressed, controller: 1)
+            }
         }
         
         // Menu button
         microGamepad.buttonMenu.valueChangedHandler = { [weak self] _, _, pressed in
             if pressed {
-                self?.onMenuButtonPressed?()
+                Task { @MainActor in
+                    self?.onMenuButtonPressed?()
+                }
             }
         }
     }
@@ -282,18 +314,6 @@ class GameControllerManager: ObservableObject {
         
         controller.light?.color = color
     }
-    
-    /// Trigger haptic feedback
-    func triggerHaptic(intensity: Float = 0.5, duration: Float = 0.1) {
-        guard let controller = primaryController,
-              let haptics = controller.haptics else { return }
-        
-        // Create haptic pattern
-        if let engine = haptics.createEngine(withLocality: .default) {
-            // Configure and play haptic
-            // This requires additional setup for CHHapticEngine
-        }
-    }
 }
 
 // MARK: - Input Debug
@@ -312,4 +332,3 @@ extension NESInput: CustomStringConvertible {
         return buttons.isEmpty ? "None" : buttons.joined(separator: " ")
     }
 }
-

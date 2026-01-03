@@ -100,7 +100,7 @@ NesCaster/
 | Controller | Support |
 |------------|---------|
 | Siri Remote | ✅ Touch surface + buttons |
-| PlayStation 5 DualSense | ✅ Full support + haptics |
+| PlayStation 5 DualSense | ✅ Full support |
 | Xbox Series X Controller | ✅ Full support |
 | MFi Controllers | ✅ Full support |
 | 8BitDo Controllers | ✅ Bluetooth connection |
@@ -109,17 +109,35 @@ NesCaster/
 
 ## 📋 Roadmap
 
+### Phase 1: Foundation ✅
 - [x] Project setup
-- [x] Basic UI shell
+- [x] Basic UI shell (Library, Settings, Emulator views)
 - [x] Metal rendering pipeline
 - [x] Controller input system
-- [ ] Mesen core integration
+- [x] Asset catalog configuration
+
+### Phase 2: Core Integration 🔄 (In Progress)
+- [ ] Compile Mesen core for tvOS
+- [ ] Create C bridge interface
 - [ ] ROM loading
+- [ ] Basic frame output
 - [ ] Audio output
-- [ ] Save states
+
+### Phase 3: Performance
+- [ ] Integer scaling shader
 - [ ] 120fps interpolation
-- [ ] Run-ahead latency reduction
-- [ ] Game library with artwork
+- [ ] Run-ahead implementation
+- [ ] Audio latency optimization
+
+### Phase 4: Features
+- [ ] Save states
+- [ ] Game library with cover art
+- [ ] Settings persistence
+- [ ] Cloud sync
+
+### Phase 5: Polish & Expansion
+- [ ] UI animations and transitions
+- [ ] Accessibility features
 - [ ] iPad version
 - [ ] Android version
 

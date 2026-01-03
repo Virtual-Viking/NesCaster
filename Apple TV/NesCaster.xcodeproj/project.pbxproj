@@ -7,16 +7,17 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		001 /* NesCasterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 101; };
-		002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 102; };
-		003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 103; };
-		004 /* GameLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 104; };
-		005 /* EmulatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105; };
-		006 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106; };
-		007 /* MetalRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107; };
-		008 /* NESEmulatorCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 108; };
-		009 /* GameControllerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109; };
-		010 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 110; };
+		001 /* NesCasterApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 101 /* NesCasterApp.swift */; };
+		002 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 102 /* ContentView.swift */; };
+		003 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 103 /* Assets.xcassets */; };
+		004 /* GameLibraryView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 104 /* GameLibraryView.swift */; };
+		005 /* EmulatorView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 105 /* EmulatorView.swift */; };
+		006 /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 106 /* SettingsView.swift */; };
+		007 /* MetalRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 107 /* MetalRenderer.swift */; };
+		008 /* NESEmulatorCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 108 /* NESEmulatorCore.swift */; };
+		009 /* GameControllerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109 /* GameControllerManager.swift */; };
+		010 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 110 /* Shaders.metal */; };
+		011 /* MesenBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 112 /* MesenBridge.mm */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -31,6 +32,9 @@
 		108 /* NESEmulatorCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NESEmulatorCore.swift; sourceTree = "<group>"; };
 		109 /* GameControllerManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GameControllerManager.swift; sourceTree = "<group>"; };
 		110 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		111 /* MesenBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MesenBridge.h; sourceTree = "<group>"; };
+		112 /* MesenBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MesenBridge.mm; sourceTree = "<group>"; };
+		113 /* NesCaster-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NesCaster-Bridging-Header.h"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -57,6 +61,7 @@
 			children = (
 				101 /* NesCasterApp.swift */,
 				102 /* ContentView.swift */,
+				113 /* NesCaster-Bridging-Header.h */,
 				303 /* Views */,
 				304 /* Core */,
 				305 /* Rendering */,
@@ -88,6 +93,8 @@
 			children = (
 				108 /* NESEmulatorCore.swift */,
 				109 /* GameControllerManager.swift */,
+				111 /* MesenBridge.h */,
+				112 /* MesenBridge.mm */,
 			);
 			path = Core;
 			sourceTree = "<group>";
@@ -106,7 +113,7 @@
 /* Begin PBXNativeTarget section */
 		400 /* NesCaster */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 500;
+			buildConfigurationList = 500 /* Build configuration list for PBXNativeTarget "NesCaster" */;
 			buildPhases = (
 				401 /* Sources */,
 				200 /* Frameworks */,
@@ -129,14 +136,15 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1500;
-				LastUpgradeCheck = 1500;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					400 = {
 						CreatedOnToolsVersion = 15.0;
+						LastSwiftMigration = 1500;
 					};
 				};
 			};
-			buildConfigurationList = 601;
+			buildConfigurationList = 601 /* Build configuration list for PBXProject "NesCaster" */;
 			compatibilityVersion = "Xcode 14.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
@@ -179,6 +187,7 @@
 				008 /* NESEmulatorCore.swift in Sources */,
 				009 /* GameControllerManager.swift in Sources */,
 				010 /* Shaders.metal in Sources */,
+				011 /* MesenBridge.mm in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -242,6 +251,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = appletvos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				TVOS_DEPLOYMENT_TARGET = 17.0;
@@ -298,6 +308,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = appletvos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				TVOS_DEPLOYMENT_TARGET = 17.0;
 				VALIDATE_PRODUCT = YES;
@@ -309,6 +320,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -324,6 +336,8 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.nescaster.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "NesCaster/NesCaster-Bridging-Header.h";
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 3;
 			};
@@ -334,6 +348,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_MODULES = YES;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = "";
@@ -349,6 +364,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = com.nescaster.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "NesCaster/NesCaster-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 3;
 			};
@@ -379,4 +395,3 @@
 	};
 	rootObject = 600 /* Project object */;
 }
-
