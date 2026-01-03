@@ -20,6 +20,10 @@
 		011 /* MesenBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 112 /* MesenBridge.mm */; };
 		012 /* AppIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 114 /* AppIcons.swift */; };
 		013 /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 116 /* AudioEngine.swift */; };
+		014 /* Profile.swift in Sources */ = {isa = PBXBuildFile; fileRef = 117 /* Profile.swift */; };
+		015 /* ProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 118 /* ProfileManager.swift */; };
+		016 /* ProfilePictureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119 /* ProfilePictureManager.swift */; };
+		017 /* ProfileSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120 /* ProfileSelectionView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,6 +44,10 @@
 		114 /* AppIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIcons.swift; sourceTree = "<group>"; };
 		115 /* ICONS_REFERENCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ICONS_REFERENCE.md; sourceTree = "<group>"; };
 		116 /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
+		117 /* Profile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Profile.swift; sourceTree = "<group>"; };
+		118 /* ProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManager.swift; sourceTree = "<group>"; };
+		119 /* ProfilePictureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePictureManager.swift; sourceTree = "<group>"; };
+		120 /* ProfileSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSelectionView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -69,6 +77,7 @@
 				113 /* NesCaster-Bridging-Header.h */,
 				303 /* Views */,
 				304 /* Core */,
+				307 /* Profiles */,
 				305 /* Rendering */,
 				306 /* Resources */,
 				103 /* Assets.xcassets */,
@@ -90,6 +99,7 @@
 				104 /* GameLibraryView.swift */,
 				105 /* EmulatorView.swift */,
 				106 /* SettingsView.swift */,
+				120 /* ProfileSelectionView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -122,6 +132,16 @@
 				115 /* ICONS_REFERENCE.md */,
 			);
 			path = Resources;
+			sourceTree = "<group>";
+		};
+		307 /* Profiles */ = {
+			isa = PBXGroup;
+			children = (
+				117 /* Profile.swift */,
+				118 /* ProfileManager.swift */,
+				119 /* ProfilePictureManager.swift */,
+			);
+			path = Profiles;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -206,6 +226,10 @@
 				011 /* MesenBridge.mm in Sources */,
 				012 /* AppIcons.swift in Sources */,
 				013 /* AudioEngine.swift in Sources */,
+				014 /* Profile.swift in Sources */,
+				015 /* ProfileManager.swift in Sources */,
+				016 /* ProfilePictureManager.swift in Sources */,
+				017 /* ProfileSelectionView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

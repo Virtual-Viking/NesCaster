@@ -2,12 +2,15 @@
 //  ContentView.swift
 //  NesCaster
 //
+//  Main content view with tab navigation
+//
 
 import SwiftUI
 
 struct ContentView: View {
     
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var profileManager: ProfileManager
     @State private var selectedTab: Tab = .library
     @FocusState private var focusedTab: Tab?
     
@@ -91,7 +94,7 @@ struct ContentView: View {
                 case .library:
                     GameLibraryView()
                 case .settings:
-                    SettingsView()
+                    SettingsView(profileManager: profileManager)
                 }
             }
             .frame(maxHeight: .infinity)
@@ -130,17 +133,68 @@ struct ContentView: View {
                         )
                     )
                 
-                Text("Premium NES Experience")
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundColor(.white.opacity(0.5))
-                    .tracking(2)
+                if let profile = profileManager.activeProfile {
+                    Text("Playing as \(profile.name)")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.white.opacity(0.5))
+                        .tracking(2)
+                } else {
+                    Text("Premium NES Experience")
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundColor(.white.opacity(0.5))
+                        .tracking(2)
+                }
             }
             
             Spacer()
             
+            // Profile indicator
+            if let profile = profileManager.activeProfile {
+                profileIndicator(profile)
+            }
+            
             // Performance badge
             performanceBadge
         }
+    }
+    
+    private func profileIndicator(_ profile: Profile) -> some View {
+        let color = ProfilePictureManager.shared.getColor(for: profile.pictureID)
+        
+        return Button(action: switchProfile) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(color)
+                        .frame(width: 40, height: 40)
+                    
+                    Text(String(profile.name.prefix(1)).uppercased())
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(profile.name)
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundColor(.white)
+                    
+                    Text("Switch Profile")
+                        .font(.system(size: 11))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                    )
+            )
+        }
+        .buttonStyle(.plain)
     }
     
     private var performanceBadge: some View {
@@ -183,6 +237,12 @@ struct ContentView: View {
                 .focused($focusedTab, equals: tab)
             }
         }
+    }
+    
+    // MARK: - Actions
+    
+    private func switchProfile() {
+        profileManager.activeProfile = nil
     }
 }
 
@@ -231,5 +291,5 @@ struct TabButton: View {
 #Preview {
     ContentView()
         .environmentObject(AppState())
+        .environmentObject(ProfileManager())
 }
-
