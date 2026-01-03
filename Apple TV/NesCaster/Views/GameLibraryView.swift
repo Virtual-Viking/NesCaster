@@ -2,7 +2,7 @@
 //  GameLibraryView.swift
 //  NesCaster
 //
-//  Game library with ROM management and demo mode
+//  Game library with Liquid Glass UI
 //
 
 import SwiftUI
@@ -15,7 +15,7 @@ struct GameLibraryView: View {
     @State private var showingDemoAlert = false
     @State private var showingImportHelp = false
     
-    // Demo games for UI testing (before ROM loading is implemented)
+    // Demo games for UI testing
     private let demoGames: [Game] = [
         Game(title: "Super Mario Bros.", romPath: URL(fileURLWithPath: "/demo/smb.nes"), coverArt: nil, lastPlayed: Date()),
         Game(title: "The Legend of Zelda", romPath: URL(fileURLWithPath: "/demo/zelda.nes"), coverArt: nil, lastPlayed: Date().addingTimeInterval(-86400)),
@@ -32,18 +32,18 @@ struct GameLibraryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 50) {
-                // Demo Mode Section (for testing)
-                demoModeSection
+                // Quick Start Section
+                quickStartSection
                 
-                // Recent Games Section
+                // Recent Games
                 if !appState.recentGames.isEmpty || !savedGames.isEmpty {
                     recentGamesSection
                 }
                 
-                // All Games Section
+                // All Games
                 allGamesSection
                 
-                // Add Games Button
+                // Add Games
                 addGamesSection
             }
             .padding(.bottom, 80)
@@ -55,45 +55,50 @@ struct GameLibraryView: View {
             }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("Launch the emulator in demo mode? This shows animated test patterns to verify the rendering pipeline is working correctly.")
+            Text("Launch the emulator in demo mode? This shows animated test patterns to verify rendering.")
         }
         .onAppear {
             loadSavedGames()
         }
     }
     
-    // MARK: - Demo Mode Section
+    // MARK: - Quick Start Section
     
-    private var demoModeSection: some View {
+    private var quickStartSection: some View {
         VStack(alignment: .leading, spacing: 24) {
-            sectionHeader(title: "Quick Start", icon: "bolt.fill")
+            glassHeader(title: "Quick Start", icon: "bolt.fill")
             
             HStack(spacing: 30) {
-                // Demo Mode Button
+                // Demo Mode Button (Glass)
                 Button(action: { showingDemoAlert = true }) {
-                    HStack(spacing: 16) {
+                    HStack(spacing: 18) {
                         ZStack {
-                            RoundedRectangle(cornerRadius: 12)
+                            RoundedRectangle(cornerRadius: 16)
                                 .fill(
                                     LinearGradient(
                                         colors: [
-                                            Color(red: 0.95, green: 0.3, blue: 0.4),
-                                            Color(red: 0.85, green: 0.2, blue: 0.5)
+                                            Color(red: 0.95, green: 0.35, blue: 0.45),
+                                            Color(red: 0.85, green: 0.25, blue: 0.55)
                                         ],
                                         startPoint: .topLeading,
                                         endPoint: .bottomTrailing
                                     )
                                 )
-                                .frame(width: 60, height: 60)
+                                .frame(width: 64, height: 64)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16)
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                )
                             
                             Image(systemName: "play.fill")
-                                .font(.system(size: 24, weight: .semibold))
+                                .font(.system(size: 26, weight: .semibold))
                                 .foregroundColor(.white)
                         }
+                        .shadow(color: Color(red: 0.95, green: 0.3, blue: 0.4).opacity(0.4), radius: 15)
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Demo Mode")
-                                .font(.system(size: 18, weight: .semibold))
+                                .font(.system(size: 19, weight: .semibold))
                                 .foregroundColor(.white)
                             
                             Text("Test rendering pipeline")
@@ -101,57 +106,66 @@ struct GameLibraryView: View {
                                 .foregroundColor(.white.opacity(0.5))
                         }
                     }
-                    .padding(16)
+                    .padding(18)
                     .background(
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(.ultraThinMaterial.opacity(0.5))
+                        RoundedRectangle(cornerRadius: 20)
+                            .fill(.ultraThinMaterial)
                             .overlay(
-                                RoundedRectangle(cornerRadius: 16)
-                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                                RoundedRectangle(cornerRadius: 20)
+                                    .stroke(
+                                        LinearGradient(
+                                            colors: [.white.opacity(0.25), .white.opacity(0.1)],
+                                            startPoint: .topLeading,
+                                            endPoint: .bottomTrailing
+                                        ),
+                                        lineWidth: 1
+                                    )
                             )
+                            .shadow(color: .black.opacity(0.2), radius: 15, y: 8)
                     )
                 }
-                .buttonStyle(ScaleButtonStyle())
+                .buttonStyle(GlassButtonStyle())
                 
-                // FPS Counter Info
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 8) {
-                        Circle()
-                            .fill(Color.green)
-                            .frame(width: 8, height: 8)
-                        Text("Ready")
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.green)
-                    }
+                // Status indicator
+                HStack(spacing: 10) {
+                    Circle()
+                        .fill(Color.green)
+                        .frame(width: 10, height: 10)
+                        .shadow(color: .green, radius: 5)
                     
-                    Text("Metal renderer initialized")
-                        .font(.system(size: 12))
-                        .foregroundColor(.white.opacity(0.4))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Ready")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundColor(.green)
+                        Text("Metal renderer active")
+                            .font(.system(size: 12))
+                            .foregroundColor(.white.opacity(0.4))
+                    }
                 }
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .background(
+                    Capsule()
+                        .fill(.ultraThinMaterial.opacity(0.5))
+                )
             }
         }
     }
     
-    // MARK: - Recent Games
+    // MARK: - Recent Games Section
     
     private var recentGamesSection: some View {
         VStack(alignment: .leading, spacing: 24) {
-            sectionHeader(title: "Continue Playing", icon: "clock.fill")
+            glassHeader(title: "Continue Playing", icon: "clock.fill")
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 30) {
-                    // Real saved games first
-                    ForEach(savedGames.prefix(3)) { game in
-                        RecentGameCard(game: game) {
-                            launchGame(game)
-                        }
-                    }
-                    
-                    // Then demo placeholders
-                    if savedGames.isEmpty {
-                        ForEach(demoGames.prefix(3)) { game in
-                            RecentGameCard(game: game) {
-                                showDemoGameAlert(game)
+                    ForEach(savedGames.isEmpty ? Array(demoGames.prefix(3)) : Array(savedGames.prefix(3))) { game in
+                        GlassRecentGameCard(game: game) {
+                            if savedGames.isEmpty {
+                                showingDemoAlert = true
+                            } else {
+                                launchGame(game)
                             }
                         }
                     }
@@ -163,54 +177,68 @@ struct GameLibraryView: View {
         }
     }
     
-    // MARK: - All Games
+    // MARK: - All Games Section
     
     private var allGamesSection: some View {
         VStack(alignment: .leading, spacing: 24) {
             HStack {
-                sectionHeader(title: "All Games", icon: "square.grid.2x2.fill")
+                glassHeader(title: "All Games", icon: "square.grid.2x2.fill")
                 
                 Spacer()
                 
                 Text("\(savedGames.count + demoGames.count) games")
                     .font(.system(size: 14, weight: .medium))
                     .foregroundColor(.white.opacity(0.4))
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(
+                        Capsule()
+                            .fill(.ultraThinMaterial.opacity(0.5))
+                    )
             }
             
             LazyVGrid(columns: columns, spacing: 40) {
-                // Real games
                 ForEach(savedGames) { game in
-                    GameCard(game: game) {
+                    GlassGameCard(game: game) {
                         launchGame(game)
                     }
                 }
                 
-                // Demo placeholders
                 ForEach(demoGames) { game in
-                    GameCard(game: game, isDemo: true) {
-                        showDemoGameAlert(game)
+                    GlassGameCard(game: game, isDemo: true) {
+                        showingDemoAlert = true
                     }
                 }
             }
         }
     }
     
-    // MARK: - Add Games
+    // MARK: - Add Games Section
     
     private var addGamesSection: some View {
         VStack(alignment: .leading, spacing: 24) {
-            sectionHeader(title: "Add Games", icon: "plus.circle.fill")
+            glassHeader(title: "Add Games", icon: "plus.circle.fill")
             
             Button(action: { showingImportHelp = true }) {
-                HStack(spacing: 20) {
+                HStack(spacing: 22) {
                     ZStack {
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white.opacity(0.05))
+                        RoundedRectangle(cornerRadius: 18)
+                            .fill(.ultraThinMaterial)
                             .frame(width: 80, height: 80)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 18)
+                                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                            )
                         
                         Image(systemName: "doc.badge.plus")
-                            .font(.system(size: 32, weight: .medium))
-                            .foregroundColor(.white.opacity(0.6))
+                            .font(.system(size: 34, weight: .medium))
+                            .foregroundStyle(
+                                LinearGradient(
+                                    colors: [.white.opacity(0.7), .white.opacity(0.5)],
+                                    startPoint: .top,
+                                    endPoint: .bottom
+                                )
+                            )
                     }
                     
                     VStack(alignment: .leading, spacing: 6) {
@@ -218,52 +246,64 @@ struct GameLibraryView: View {
                             .font(.system(size: 22, weight: .semibold))
                             .foregroundColor(.white)
                         
-                        Text("Learn how to transfer .nes files to Apple TV")
+                        Text("Transfer .nes files to Apple TV")
                             .font(.system(size: 16))
                             .foregroundColor(.white.opacity(0.5))
                     }
                     
                     Spacer()
                     
-                    Image(systemName: "questionmark.circle")
-                        .font(.system(size: 20, weight: .semibold))
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 18, weight: .semibold))
                         .foregroundColor(.white.opacity(0.3))
+                        .padding(.trailing, 8)
                 }
                 .padding(24)
                 .background(
-                    RoundedRectangle(cornerRadius: 20)
-                        .fill(.ultraThinMaterial.opacity(0.5))
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(.ultraThinMaterial)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 20)
-                                .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                            RoundedRectangle(cornerRadius: 24)
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [.white.opacity(0.2), .white.opacity(0.08)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1
+                                )
                         )
+                        .shadow(color: .black.opacity(0.2), radius: 20, y: 10)
                 )
             }
-            .buttonStyle(ScaleButtonStyle())
+            .buttonStyle(GlassButtonStyle())
             .alert("How to Add ROMs", isPresented: $showingImportHelp) {
-                Button("Scan for ROMs") {
-                    loadSavedGames()
-                }
+                Button("Scan for ROMs") { loadSavedGames() }
                 Button("OK", role: .cancel) { }
             } message: {
-                Text("Transfer .nes ROM files to this app's Documents folder using:\n\n• Finder (macOS) via USB\n• Third-party file managers\n• Web server upload\n\nROMs placed in the Documents folder will appear automatically.")
+                Text("Transfer .nes files to this app's Documents folder using Finder (USB), web upload, or third-party file managers.")
             }
             
-            // Help text
-            Text("ROMs in the app's Documents folder are detected automatically on launch.")
+            Text("ROMs in Documents folder are detected automatically.")
                 .font(.system(size: 14))
                 .foregroundColor(.white.opacity(0.3))
-                .padding(.top, 8)
+                .padding(.top, 4)
         }
     }
     
     // MARK: - Helpers
     
-    private func sectionHeader(title: String, icon: String) -> some View {
-        HStack(spacing: 12) {
-            Image(systemName: icon)
-                .font(.system(size: 20, weight: .semibold))
-                .foregroundColor(Color(red: 0.95, green: 0.3, blue: 0.4))
+    private func glassHeader(title: String, icon: String) -> some View {
+        HStack(spacing: 14) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 36, height: 36)
+                
+                Image(systemName: icon)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(Color(red: 0.95, green: 0.35, blue: 0.45))
+            }
             
             Text(title)
                 .font(.system(size: 26, weight: .bold))
@@ -279,25 +319,17 @@ struct GameLibraryView: View {
     }
     
     private func launchDemoMode() {
-        appState.currentGame = nil // No game = demo mode
+        appState.currentGame = nil
         withAnimation(.easeInOut(duration: 0.4)) {
             appState.isEmulatorRunning = true
         }
     }
-    
-    private func showDemoGameAlert(_ game: Game) {
-        // For demo games, just launch demo mode
-        showingDemoAlert = true
-    }
-    
-    // MARK: - ROM Management
     
     private func loadSavedGames() {
         let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
         
         do {
             let files = try FileManager.default.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
-            
             savedGames = files
                 .filter { $0.pathExtension.lowercased() == "nes" }
                 .map { url in
@@ -309,55 +341,74 @@ struct GameLibraryView: View {
                     )
                 }
                 .sorted { $0.title < $1.title }
-            
-            print("📚 Loaded \(savedGames.count) saved games")
-            
         } catch {
             print("❌ Failed to load saved games: \(error)")
         }
     }
-    
-    private func saveGameLibrary() {
-        // TODO: Persist game metadata (play times, cover art, etc.)
+}
+
+// MARK: - Glass Button Style
+
+struct GlassButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .opacity(configuration.isPressed ? 0.9 : 1.0)
+            .animation(.spring(response: 0.2), value: configuration.isPressed)
     }
 }
 
-// MARK: - Recent Game Card
+// MARK: - Glass Recent Game Card
 
-struct RecentGameCard: View {
+struct GlassRecentGameCard: View {
     let game: Game
     let action: () -> Void
     
     @Environment(\.isFocused) var isFocused
     
+    private var accentColor: Color {
+        let hash = game.title.hashValue
+        let hue = Double(abs(hash) % 360) / 360.0
+        return Color(hue: hue, saturation: 0.6, brightness: 0.7)
+    }
+    
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 16) {
-                // Game art placeholder
+            VStack(alignment: .leading, spacing: 18) {
+                // Game art with glass frame
                 ZStack {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    Color(red: 0.15, green: 0.15, blue: 0.25),
-                                    Color(red: 0.1, green: 0.1, blue: 0.18)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+                    // Glass background
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            accentColor.opacity(0.3),
+                                            accentColor.opacity(0.1)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                         )
                     
-                    // NES cartridge icon
+                    // Icon
                     Image(systemName: "arcade.stick")
-                        .font(.system(size: 60, weight: .thin))
-                        .foregroundColor(.white.opacity(0.2))
+                        .font(.system(size: 56, weight: .thin))
+                        .foregroundColor(.white.opacity(0.25))
                     
-                    // Play overlay on focus
+                    // Play overlay
                     if isFocused {
                         ZStack {
                             Circle()
                                 .fill(.ultraThinMaterial)
                                 .frame(width: 70, height: 70)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 2)
+                                )
                             
                             Image(systemName: "play.fill")
                                 .font(.system(size: 28))
@@ -367,17 +418,19 @@ struct RecentGameCard: View {
                     }
                 }
                 .frame(width: 360, height: 200)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .clipShape(RoundedRectangle(cornerRadius: 20))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 20)
                         .stroke(
-                            isFocused ? Color.white.opacity(0.5) : Color.white.opacity(0.1),
+                            isFocused 
+                                ? LinearGradient(colors: [accentColor.opacity(0.8), accentColor.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                : LinearGradient(colors: [.white.opacity(0.2), .white.opacity(0.1)], startPoint: .topLeading, endPoint: .bottomTrailing),
                             lineWidth: isFocused ? 3 : 1
                         )
                 )
                 .shadow(
-                    color: isFocused ? Color(red: 0.95, green: 0.3, blue: 0.4).opacity(0.4) : .clear,
-                    radius: 30
+                    color: isFocused ? accentColor.opacity(0.4) : .clear,
+                    radius: 25
                 )
                 
                 // Game info
@@ -395,50 +448,53 @@ struct RecentGameCard: View {
                 }
                 .padding(.horizontal, 4)
             }
-            .scaleEffect(isFocused ? 1.02 : 1.0)
-            .animation(.spring(response: 0.3), value: isFocused)
+            .scaleEffect(isFocused ? 1.03 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isFocused)
         }
         .buttonStyle(.plain)
     }
 }
 
-// MARK: - Game Card
+// MARK: - Glass Game Card
 
-struct GameCard: View {
+struct GlassGameCard: View {
     let game: Game
     var isDemo: Bool = false
     let action: () -> Void
     
     @Environment(\.isFocused) var isFocused
     
-    // Generate consistent color from game title
     private var accentColor: Color {
         let hash = game.title.hashValue
         let hue = Double(abs(hash) % 360) / 360.0
-        return Color(hue: hue, saturation: 0.6, brightness: 0.7)
+        return Color(hue: hue, saturation: 0.55, brightness: 0.75)
     }
     
     var body: some View {
         Button(action: action) {
             VStack(spacing: 16) {
-                // Game art
+                // Glass card art
                 ZStack {
-                    RoundedRectangle(cornerRadius: 16)
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    accentColor.opacity(0.3),
-                                    accentColor.opacity(0.1)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
-                            )
+                    RoundedRectangle(cornerRadius: 18)
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 18)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            accentColor.opacity(0.35),
+                                            accentColor.opacity(0.15)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
                         )
                     
                     // Game initial
                     Text(String(game.title.prefix(1)))
-                        .font(.system(size: 80, weight: .bold, design: .rounded))
-                        .foregroundColor(accentColor.opacity(0.5))
+                        .font(.system(size: 72, weight: .bold, design: .rounded))
+                        .foregroundColor(accentColor.opacity(0.6))
                     
                     // Demo badge
                     if isDemo {
@@ -447,12 +503,14 @@ struct GameCard: View {
                                 Spacer()
                                 Text("DEMO")
                                     .font(.system(size: 10, weight: .bold))
-                                    .foregroundColor(.white.opacity(0.8))
-                                    .padding(.horizontal, 8)
-                                    .padding(.vertical, 4)
-                                    .background(Color.black.opacity(0.5))
-                                    .cornerRadius(4)
-                                    .padding(8)
+                                    .foregroundColor(.white.opacity(0.9))
+                                    .padding(.horizontal, 10)
+                                    .padding(.vertical, 5)
+                                    .background(
+                                        Capsule()
+                                            .fill(.ultraThinMaterial)
+                                    )
+                                    .padding(10)
                             }
                             Spacer()
                         }
@@ -464,6 +522,10 @@ struct GameCard: View {
                             Circle()
                                 .fill(.ultraThinMaterial)
                                 .frame(width: 60, height: 60)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.white.opacity(0.3), lineWidth: 2)
+                                )
                             
                             Image(systemName: "play.fill")
                                 .font(.system(size: 24))
@@ -473,40 +535,32 @@ struct GameCard: View {
                     }
                 }
                 .frame(height: 180)
-                .clipShape(RoundedRectangle(cornerRadius: 16))
+                .clipShape(RoundedRectangle(cornerRadius: 18))
                 .overlay(
-                    RoundedRectangle(cornerRadius: 16)
+                    RoundedRectangle(cornerRadius: 18)
                         .stroke(
-                            isFocused ? accentColor : Color.white.opacity(0.1),
+                            isFocused
+                                ? LinearGradient(colors: [accentColor.opacity(0.8), accentColor.opacity(0.4)], startPoint: .topLeading, endPoint: .bottomTrailing)
+                                : LinearGradient(colors: [.white.opacity(0.15), .white.opacity(0.08)], startPoint: .topLeading, endPoint: .bottomTrailing),
                             lineWidth: isFocused ? 3 : 1
                         )
                 )
                 .shadow(
                     color: isFocused ? accentColor.opacity(0.5) : .clear,
-                    radius: 25
+                    radius: 20
                 )
                 
                 // Title
                 Text(game.title)
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.white)
                     .lineLimit(2)
                     .multilineTextAlignment(.center)
             }
-            .scaleEffect(isFocused ? 1.05 : 1.0)
-            .animation(.spring(response: 0.3), value: isFocused)
+            .scaleEffect(isFocused ? 1.06 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isFocused)
         }
         .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Scale Button Style
-
-struct ScaleButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.98 : 1.0)
-            .animation(.spring(response: 0.2), value: configuration.isPressed)
     }
 }
 

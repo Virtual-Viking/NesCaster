@@ -24,6 +24,13 @@
 		015 /* ProfileManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 118 /* ProfileManager.swift */; };
 		016 /* ProfilePictureManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 119 /* ProfilePictureManager.swift */; };
 		017 /* ProfileSelectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 120 /* ProfileSelectionView.swift */; };
+		018 /* SaveState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 121 /* SaveState.swift */; };
+		019 /* SaveStateManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 122 /* SaveStateManager.swift */; };
+		020 /* SaveStateLoadView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 123 /* SaveStateLoadView.swift */; };
+		021 /* ControllerMappingManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 124 /* ControllerMappingManager.swift */; };
+		022 /* ControllerMappingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125 /* ControllerMappingView.swift */; };
+		023 /* ContentTransferServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 126 /* ContentTransferServer.swift */; };
+		024 /* TransferView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 127 /* TransferView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -48,6 +55,13 @@
 		118 /* ProfileManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileManager.swift; sourceTree = "<group>"; };
 		119 /* ProfilePictureManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePictureManager.swift; sourceTree = "<group>"; };
 		120 /* ProfileSelectionView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfileSelectionView.swift; sourceTree = "<group>"; };
+		121 /* SaveState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveState.swift; sourceTree = "<group>"; };
+		122 /* SaveStateManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStateManager.swift; sourceTree = "<group>"; };
+		123 /* SaveStateLoadView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SaveStateLoadView.swift; sourceTree = "<group>"; };
+		124 /* ControllerMappingManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControllerMappingManager.swift; sourceTree = "<group>"; };
+		125 /* ControllerMappingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControllerMappingView.swift; sourceTree = "<group>"; };
+		126 /* ContentTransferServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentTransferServer.swift; sourceTree = "<group>"; };
+		127 /* TransferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -78,6 +92,8 @@
 				303 /* Views */,
 				304 /* Core */,
 				307 /* Profiles */,
+				308 /* SaveStates */,
+				309 /* WebServer */,
 				305 /* Rendering */,
 				306 /* Resources */,
 				103 /* Assets.xcassets */,
@@ -100,6 +116,8 @@
 				105 /* EmulatorView.swift */,
 				106 /* SettingsView.swift */,
 				120 /* ProfileSelectionView.swift */,
+				125 /* ControllerMappingView.swift */,
+				127 /* TransferView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -110,6 +128,7 @@
 				108 /* NESEmulatorCore.swift */,
 				109 /* GameControllerManager.swift */,
 				116 /* AudioEngine.swift */,
+				124 /* ControllerMappingManager.swift */,
 				111 /* MesenBridge.h */,
 				112 /* MesenBridge.mm */,
 			);
@@ -142,6 +161,24 @@
 				119 /* ProfilePictureManager.swift */,
 			);
 			path = Profiles;
+			sourceTree = "<group>";
+		};
+		308 /* SaveStates */ = {
+			isa = PBXGroup;
+			children = (
+				121 /* SaveState.swift */,
+				122 /* SaveStateManager.swift */,
+				123 /* SaveStateLoadView.swift */,
+			);
+			path = SaveStates;
+			sourceTree = "<group>";
+		};
+		309 /* WebServer */ = {
+			isa = PBXGroup;
+			children = (
+				126 /* ContentTransferServer.swift */,
+			);
+			path = WebServer;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -230,6 +267,13 @@
 				015 /* ProfileManager.swift in Sources */,
 				016 /* ProfilePictureManager.swift in Sources */,
 				017 /* ProfileSelectionView.swift in Sources */,
+				018 /* SaveState.swift in Sources */,
+				019 /* SaveStateManager.swift in Sources */,
+				020 /* SaveStateLoadView.swift in Sources */,
+				021 /* ControllerMappingManager.swift in Sources */,
+				022 /* ControllerMappingView.swift in Sources */,
+				023 /* ContentTransferServer.swift in Sources */,
+				024 /* TransferView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

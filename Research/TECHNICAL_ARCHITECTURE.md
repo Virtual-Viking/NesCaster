@@ -9,7 +9,59 @@ NesCaster is a high-performance NES emulator targeting modern platforms (Apple T
 - **4K crisp output** (integer scaling, pixel-perfect)
 - **Multi-profile support** (Netflix-style user switching)
 - **Smart save states** (history-based, never lose progress)
+- **Liquid Glass UI** (Apple's latest design language on tvOS/iOS)
 - **Modern, beautiful UI**
+
+---
+
+## 🔮 Liquid Glass UI (Apple TV & iPad)
+
+Apple devices feature **Liquid Glass** design, Apple's newest visual language with glassmorphic surfaces and fluid animations.
+
+### Visual Components
+
+| Component | Implementation |
+|-----------|----------------|
+| Backgrounds | Deep gradients with animated RadialGradient orbs (coral, blue, purple) |
+| Cards | `.ultraThinMaterial` fill with gradient stroke borders |
+| Buttons | Glass capsules with subtle shadows |
+| Focus States | Accent color glow + 1.05x scale + border highlight |
+| Navigation | Glass sidebar with per-section colored icons |
+| Transitions | Spring animations (response: 0.35s, damping: 0.7) |
+
+### Implementation Pattern
+
+```swift
+// Glass Card
+RoundedRectangle(cornerRadius: 20)
+    .fill(.ultraThinMaterial)
+    .overlay(
+        RoundedRectangle(cornerRadius: 20)
+            .stroke(
+                LinearGradient(
+                    colors: [.white.opacity(0.25), .white.opacity(0.1)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 1
+            )
+    )
+    .shadow(color: .black.opacity(0.2), radius: 15, y: 8)
+
+// Focus Effect
+.shadow(color: isFocused ? accentColor.opacity(0.5) : .clear, radius: 25)
+.scaleEffect(isFocused ? 1.05 : 1.0)
+.animation(.spring(response: 0.35, dampingFraction: 0.7), value: isFocused)
+```
+
+### Views with Liquid Glass
+
+| View | Glass Features |
+|------|----------------|
+| ProfileSelectionView | Full-screen glass, animated orbs, glass profile cards |
+| ContentView | Glass header, tab bar, profile indicator |
+| GameLibraryView | Glass game cards with colored accents |
+| SettingsView | Glass sidebar + settings panels |
 
 ---
 
@@ -263,7 +315,7 @@ Frame Ready → Metal Texture Upload → GPU Upscale → Present
 
 **Key Metal Settings:**
 - `presentsWithTransaction = false`
-- `framebufferOnly = true`
+- `framebufferOnly = true`  
 - Use `MTLDrawable.presentAfterMinimumDuration()` for frame pacing
 
 ### 4. Audio Latency

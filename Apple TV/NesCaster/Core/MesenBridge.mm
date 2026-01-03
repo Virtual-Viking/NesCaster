@@ -455,6 +455,88 @@ bool mesen_load_state_from_buffer(const uint8_t* buffer, size_t size) {
     return false;
 }
 
+uint8_t* mesen_create_save_state(int32_t* outSize) {
+    if (!g_romLoaded || !outSize) {
+        return nullptr;
+    }
+    
+    // For now, create a stub save state
+    // TODO: Replace with actual Mesen save state serialization
+    // 
+    // When Mesen core is integrated:
+    // std::vector<uint8_t> stateData;
+    // g_emulator->GetSaveStateManager()->GetSaveStateData(stateData);
+    // size_t size = stateData.size();
+    // uint8_t* buffer = (uint8_t*)malloc(size);
+    // memcpy(buffer, stateData.data(), size);
+    // *outSize = (int32_t)size;
+    // return buffer;
+    
+    // Stub: Create a mock save state with current frame data
+    const size_t headerSize = 16;
+    const size_t stateSize = headerSize + NES_FRAME_SIZE;
+    
+    uint8_t* buffer = (uint8_t*)malloc(stateSize);
+    if (!buffer) {
+        *outSize = 0;
+        return nullptr;
+    }
+    
+    // Write header (magic + frame count)
+    buffer[0] = 'N'; buffer[1] = 'C'; buffer[2] = 'S'; buffer[3] = 'T'; // Magic: NCST
+    buffer[4] = 1; // Version
+    buffer[5] = 0;
+    buffer[6] = 0;
+    buffer[7] = 0;
+    
+    // Frame count (little endian)
+    uint32_t fc = g_frameCount;
+    buffer[8] = fc & 0xFF;
+    buffer[9] = (fc >> 8) & 0xFF;
+    buffer[10] = (fc >> 16) & 0xFF;
+    buffer[11] = (fc >> 24) & 0xFF;
+    
+    // Reserved
+    buffer[12] = 0; buffer[13] = 0; buffer[14] = 0; buffer[15] = 0;
+    
+    // Copy current frame buffer as state data
+    memcpy(buffer + headerSize, g_frameBuffer, NES_FRAME_SIZE);
+    
+    *outSize = (int32_t)stateSize;
+    NSLog(@"💾 MesenBridge: Created save state (%d bytes)", *outSize);
+    return buffer;
+}
+
+bool mesen_load_save_state(const uint8_t* data, int32_t size) {
+    if (!g_romLoaded || !data || size < 16) {
+        return false;
+    }
+    
+    // Validate magic
+    if (data[0] != 'N' || data[1] != 'C' || data[2] != 'S' || data[3] != 'T') {
+        NSLog(@"❌ MesenBridge: Invalid save state magic");
+        return false;
+    }
+    
+    // TODO: Replace with actual Mesen save state deserialization
+    //
+    // When Mesen core is integrated:
+    // std::vector<uint8_t> stateData(data, data + size);
+    // return g_emulator->GetSaveStateManager()->LoadSaveStateData(stateData);
+    
+    // Stub: Restore frame buffer from save state
+    const size_t headerSize = 16;
+    if (size >= headerSize + NES_FRAME_SIZE) {
+        memcpy(g_frameBuffer, data + headerSize, NES_FRAME_SIZE);
+        
+        // Restore frame count
+        g_frameCount = data[8] | (data[9] << 8) | (data[10] << 16) | (data[11] << 24);
+    }
+    
+    NSLog(@"📂 MesenBridge: Loaded save state (%d bytes)", size);
+    return true;
+}
+
 // MARK: - Quick Save/Load
 
 void mesen_quick_save(void) {

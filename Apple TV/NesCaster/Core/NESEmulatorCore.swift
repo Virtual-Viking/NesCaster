@@ -8,6 +8,7 @@
 
 import Foundation
 import QuartzCore
+import UIKit
 
 // MARK: - NES Button Mapping
 
@@ -346,7 +347,7 @@ class NESEmulatorCore: ObservableObject {
         mesen_set_button(Int32(controller), mesenButton, pressed)
     }
     
-    // MARK: - Save States
+    // MARK: - Save States (Slot-based)
     
     /// Save state to slot (0-9)
     func saveState(slot: Int) -> Bool {
@@ -364,6 +365,81 @@ class NESEmulatorCore: ObservableObject {
             print("📂 State loaded from slot \(slot)")
         }
         return success
+    }
+    
+    // MARK: - Save States (Data-based for stack system)
+    
+    /// Create save state and return as Data
+    func createSaveState() -> Data? {
+        var size: Int32 = 0
+        
+        // First call to get size
+        guard let dataPtr = mesen_create_save_state(&size), size > 0 else {
+            print("❌ Failed to create save state")
+            return nil
+        }
+        
+        // Copy to Data
+        let data = Data(bytes: dataPtr, count: Int(size))
+        
+        // Free the bridge-allocated memory
+        dataPtr.deallocate()
+        
+        print("💾 Save state created (\(size) bytes)")
+        return data
+    }
+    
+    /// Load save state from Data
+    func loadSaveState(_ data: Data) -> Bool {
+        let success = data.withUnsafeBytes { ptr -> Bool in
+            guard let baseAddress = ptr.baseAddress else { return false }
+            return mesen_load_save_state(
+                baseAddress.assumingMemoryBound(to: UInt8.self),
+                Int32(data.count)
+            )
+        }
+        
+        if success {
+            print("📂 Save state loaded (\(data.count) bytes)")
+        } else {
+            print("❌ Failed to load save state")
+        }
+        return success
+    }
+    
+    /// Capture current frame as PNG Data for thumbnails
+    func captureScreenshot() -> Data? {
+        guard let frameBuffer = mesen_get_frame_buffer() else {
+            return nil
+        }
+        
+        // Create UIImage from RGBA frame buffer
+        let width = Self.nesWidth
+        let height = Self.nesHeight
+        let bytesPerPixel = 4
+        let bytesPerRow = width * bytesPerPixel
+        
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGBitmapInfo(rawValue: CGImageAlphaInfo.premultipliedLast.rawValue)
+        
+        guard let context = CGContext(
+            data: UnsafeMutableRawPointer(mutating: frameBuffer),
+            width: width,
+            height: height,
+            bitsPerComponent: 8,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo.rawValue
+        ) else {
+            return nil
+        }
+        
+        guard let cgImage = context.makeImage() else {
+            return nil
+        }
+        
+        let uiImage = UIImage(cgImage: cgImage)
+        return uiImage.jpegData(compressionQuality: 0.7)
     }
     
     // MARK: - Quick Save/Load (for run-ahead)

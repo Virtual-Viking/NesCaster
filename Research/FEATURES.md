@@ -4,6 +4,73 @@ This document details all planned features for NesCaster with implementation not
 
 ---
 
+## 🔮 Liquid Glass UI (Apple TV & iPad)
+
+Apple devices feature the latest **Liquid Glass** design language for a premium, modern look.
+
+### Design Elements
+
+| Element | Implementation |
+|---------|----------------|
+| **Backgrounds** | Animated color orbs with RadialGradient, blur, and overlay |
+| **Cards** | `.ultraThinMaterial` with gradient stroke borders |
+| **Buttons** | Capsule shape with glass fill and subtle shadows |
+| **Focus States** | Accent color glow, scale animation, border highlight |
+| **Navigation** | Glass sidebar with colored icon accents |
+| **Transitions** | Spring-physics animations (0.35s response, 0.7 damping) |
+
+### Color Palette
+
+```swift
+// Base background
+Color(red: 0.02, green: 0.02, blue: 0.06) → Color(red: 0.04, green: 0.03, blue: 0.1)
+
+// Accent orbs
+Coral/Pink: Color(red: 0.95, green: 0.3, blue: 0.4)
+Blue: Color(red: 0.2, green: 0.4, blue: 0.9)
+Purple: Color(red: 0.5, green: 0.2, blue: 0.7)
+
+// Glass surfaces
+Primary: .ultraThinMaterial
+Border: LinearGradient [white.opacity(0.3) → white.opacity(0.1)]
+```
+
+### SwiftUI Components
+
+```swift
+// Glass card background
+RoundedRectangle(cornerRadius: 20)
+    .fill(.ultraThinMaterial)
+    .overlay(
+        RoundedRectangle(cornerRadius: 20)
+            .stroke(
+                LinearGradient(
+                    colors: [.white.opacity(0.25), .white.opacity(0.1)],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                ),
+                lineWidth: 1
+            )
+    )
+    .shadow(color: .black.opacity(0.2), radius: 15, y: 8)
+
+// Focus glow effect
+.shadow(color: isFocused ? accentColor.opacity(0.5) : .clear, radius: 25)
+.scaleEffect(isFocused ? 1.05 : 1.0)
+.animation(.spring(response: 0.35, dampingFraction: 0.7), value: isFocused)
+```
+
+### Views Using Liquid Glass
+
+- ✅ **ProfileSelectionView** — Full glass treatment with animated orbs
+- ✅ **ContentView** — Glass header, tab bar, profile indicator
+- ✅ **GameLibraryView** — Glass game cards with accent colors
+- ✅ **SettingsView** — Glass navigation sidebar + settings panels
+- 🔄 **EmulatorView** — Clean overlay for in-game menus
+- 🔄 **TransferView** — Glass QR code display
+
+---
+
 ## 👥 Profile System
 
 ### Overview
@@ -27,24 +94,39 @@ struct Profile: Identifiable, Codable {
 }
 ```
 
-### Profile Selection UI
+### Profile Selection UI (Liquid Glass)
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
+│  ░░░░   Animated Color Orbs (Coral, Blue, Purple)         ░░░░  │
+│  ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░  │
 │                                                                  │
-│                         Who's Playing?                           │
+│                       Who's Playing?                             │
+│                (Glass pill: "Select profile to edit")            │
 │                                                                  │
-│    ┌─────────┐    ┌─────────┐    ┌─────────┐    ┌─────────┐    │
-│    │ ◉     ◉│    │         │    │         │    │    +    │    │
-│    │    ▽   │    │  (img)  │    │  (img)  │    │   Add   │    │
-│    │  \___/ │    │         │    │         │    │ Profile │    │
-│    └─────────┘    └─────────┘    └─────────┘    └─────────┘    │
-│       Player 1       Player 2       Kid           (empty)       │
+│  ┌───────────────┐  ┌───────────────┐  ┌───────────────┐        │
+│  │  ╭─────────╮  │  │  ╭─────────╮  │  │  ╭─────────╮  │        │
+│  │  │ ▓▓▓▓▓▓▓ │  │  │  │ ▒▒▒▒▒▒▒ │  │  │  │    +    │  │        │
+│  │  │   P     │  │  │  │   K     │  │  │  │  Glass  │  │        │
+│  │  ╰─────────╯  │  │  ╰─────────╯  │  │  ╰─────────╯  │        │
+│  │  Glass Ring   │  │  Glass Ring   │  │  Add Profile  │        │
+│  │    Player 1   │  │      Kid      │  │  New player   │        │
+│  │  "0 games"    │  │  "3 games"    │  │               │        │
+│  └───────────────┘  └───────────────┘  └───────────────┘        │
+│       (focused)                                                  │
+│       ↑ glow                                                     │
 │                                                                  │
-│                     [ Manage Profiles ]                          │
-│                                                                  │
+│              ╭─────────────────────────────╮                     │
+│              │    Manage Profiles          │ ← Glass capsule     │
+│              ╰─────────────────────────────╯                     │
 └─────────────────────────────────────────────────────────────────┘
 ```
+
+**Focus Behavior:**
+- Focused card scales up 1.08x
+- Accent color glow appears around avatar ring
+- Spring animation (0.35s response)
 
 ### Profile Features
 

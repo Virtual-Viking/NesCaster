@@ -9,6 +9,7 @@ A high-performance Nintendo Entertainment System emulator designed for Apple TV,
 - 🎬 **True 120fps** — Smooth motion without frame doubling
 - 👥 **Multi-profile support** — Netflix-style profile switching
 - 🎨 **Beautiful UI** — Modern, elegant interface
+- 🔮 **Liquid Glass UI** — Apple's latest design language (Apple TV & iPad)
 
 ---
 
@@ -93,6 +94,18 @@ NesCaster/
    - Select "Apple TV 4K" simulator
    - Press ⌘R to build and run
 
+### Deploying to Physical Apple TV
+
+To install and test on your Apple TV 4K 3rd gen device:
+
+📖 **See detailed instructions:** [`Apple TV/DEPLOYMENT_GUIDE.md`](Apple%20TV/DEPLOYMENT_GUIDE.md)
+
+**Quick steps:**
+1. Enable **Developer Mode** on your Apple TV (Settings → Privacy and Security)
+2. Connect Apple TV to Xcode (Window → Devices and Simulators)
+3. Select your Apple TV as the build destination
+4. Press ⌘R to build and install
+
 ---
 
 ## 🏗️ Architecture
@@ -147,6 +160,26 @@ NesCaster/
 
 ---
 
+## 🔮 Liquid Glass UI (Apple Devices)
+
+NesCaster features Apple's newest **Liquid Glass** design language on Apple TV and iPad:
+
+- **Glassmorphic surfaces** — Translucent panels with depth and blur
+- **Animated orb backgrounds** — Subtle, colorful ambient lighting
+- **Glass cards & buttons** — Material-based components with elegant borders
+- **Smooth animations** — Spring-physics transitions and hover effects
+- **Focus states** — Beautiful glow effects when navigating with remote/keyboard
+
+| Component | Glass Treatment |
+|-----------|-----------------|
+| Profile Selection | Full-screen glass with animated color orbs |
+| Game Library | Glass game cards with colored accents |
+| Settings | Glass sidebar navigation + glass panels |
+| Tab Bar | Frosted glass capsule with selection indicator |
+| Buttons | Translucent pills with gradient borders |
+
+---
+
 ## 🎮 Controller Support
 
 | Controller | Support |
@@ -178,14 +211,18 @@ NesCaster/
 - [x] Audio output with AVAudioEngine
 - [ ] Compile actual Mesen core for tvOS
 
-### Phase 2.5: Profile & Save System 🔄 (Current)
-- [ ] Profile data model & persistence
-- [ ] Netflix-style profile selection UI
-- [ ] Animated profile picture library
-- [ ] Web server for content transfer (TV)
-- [ ] Per-profile controller pairing & remapping
-- [ ] Stack-based save state history
-- [ ] Auto-save after level detection
+### Phase 2.5: Profile & Save System ✅
+- [x] Profile data model & persistence
+- [x] Netflix-style profile selection UI
+- [x] **Liquid Glass UI** (Apple TV & iPad)
+- [x] Stack-based save state history
+- [x] Save state load picker UI with screenshots
+- [x] Per-profile controller pairing & remapping
+- [x] Controller mapping UI
+- [x] Web server for content transfer (TV)
+- [x] Transfer UI with QR code
+- [ ] Animated profile picture library (Lottie)
+- [ ] Auto-save level detection
 
 ### Phase 3: Performance
 - [ ] Integer scaling shader

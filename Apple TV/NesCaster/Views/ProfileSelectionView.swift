@@ -2,7 +2,7 @@
 //  ProfileSelectionView.swift
 //  NesCaster
 //
-//  Netflix-style profile selection screen
+//  Netflix-style profile selection with Liquid Glass UI
 //
 
 import SwiftUI
@@ -14,6 +14,7 @@ struct ProfileSelectionView: View {
     @State private var showingEditProfile = false
     @State private var profileToEdit: Profile?
     @State private var isManageMode = false
+    @State private var animateIn = false
     
     var onProfileSelected: (Profile) -> Void
     
@@ -21,22 +22,33 @@ struct ProfileSelectionView: View {
     
     var body: some View {
         ZStack {
-            // Background
-            backgroundGradient
+            // Animated background
+            liquidGlassBackground
             
             VStack(spacing: 60) {
-                // Header
+                // Header with glass effect
                 headerView
+                    .opacity(animateIn ? 1 : 0)
+                    .offset(y: animateIn ? 0 : -30)
                 
                 // Profile Grid
                 profileGrid
+                    .opacity(animateIn ? 1 : 0)
+                    .scaleEffect(animateIn ? 1 : 0.9)
                 
                 // Manage Button
                 if !profileManager.profiles.isEmpty {
                     manageButton
+                        .opacity(animateIn ? 1 : 0)
+                        .offset(y: animateIn ? 0 : 20)
                 }
             }
             .padding(80)
+        }
+        .onAppear {
+            withAnimation(.spring(response: 0.8, dampingFraction: 0.7).delay(0.2)) {
+                animateIn = true
+            }
         }
         .sheet(isPresented: $showingCreateProfile) {
             CreateProfileView(profileManager: profileManager)
@@ -46,30 +58,69 @@ struct ProfileSelectionView: View {
         }
     }
     
-    // MARK: - Background
+    // MARK: - Liquid Glass Background
     
-    private var backgroundGradient: some View {
+    private var liquidGlassBackground: some View {
         ZStack {
+            // Deep base gradient
             LinearGradient(
                 colors: [
-                    Color(red: 0.02, green: 0.02, blue: 0.06),
-                    Color(red: 0.05, green: 0.03, blue: 0.1),
+                    Color(red: 0.03, green: 0.03, blue: 0.08),
+                    Color(red: 0.06, green: 0.04, blue: 0.14),
                     Color(red: 0.02, green: 0.02, blue: 0.06)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             
-            // Subtle animated glow
-            RadialGradient(
-                colors: [
-                    Color(red: 0.9, green: 0.25, blue: 0.35).opacity(0.15),
-                    Color.clear
-                ],
-                center: .top,
-                startRadius: 100,
-                endRadius: 600
-            )
+            // Animated orbs for liquid effect
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(red: 0.9, green: 0.25, blue: 0.4).opacity(0.4),
+                            Color(red: 0.9, green: 0.25, blue: 0.4).opacity(0)
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 300
+                    )
+                )
+                .frame(width: 600, height: 600)
+                .blur(radius: 80)
+                .offset(x: -200, y: -300)
+            
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(red: 0.3, green: 0.4, blue: 0.9).opacity(0.3),
+                            Color(red: 0.3, green: 0.4, blue: 0.9).opacity(0)
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 250
+                    )
+                )
+                .frame(width: 500, height: 500)
+                .blur(radius: 60)
+                .offset(x: 300, y: 200)
+            
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(red: 0.6, green: 0.2, blue: 0.8).opacity(0.25),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 200
+                    )
+                )
+                .frame(width: 400, height: 400)
+                .blur(radius: 50)
+                .offset(x: -100, y: 300)
         }
         .ignoresSafeArea()
     }
@@ -77,15 +128,31 @@ struct ProfileSelectionView: View {
     // MARK: - Header
     
     private var headerView: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 20) {
             Text("Who's Playing?")
                 .font(.system(size: 56, weight: .bold, design: .rounded))
-                .foregroundColor(.white)
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.white, .white.opacity(0.8)],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                )
             
             if isManageMode {
                 Text("Select a profile to edit or delete")
-                    .font(.system(size: 20))
-                    .foregroundColor(.white.opacity(0.5))
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundColor(.white.opacity(0.6))
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 10)
+                    .background(
+                        Capsule()
+                            .fill(.ultraThinMaterial)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                            )
+                    )
             }
         }
     }
@@ -96,7 +163,7 @@ struct ProfileSelectionView: View {
         HStack(spacing: 50) {
             // Existing profiles
             ForEach(profileManager.profiles) { profile in
-                ProfileCard(
+                GlassProfileCard(
                     profile: profile,
                     isManageMode: isManageMode,
                     onSelect: {
@@ -111,7 +178,7 @@ struct ProfileSelectionView: View {
             
             // Add profile button (if under limit)
             if profileManager.profiles.count < ProfileManager.maxProfiles && !isManageMode {
-                AddProfileCard {
+                GlassAddProfileCard {
                     showingCreateProfile = true
                 }
             }
@@ -122,27 +189,39 @@ struct ProfileSelectionView: View {
     
     private var manageButton: some View {
         Button(action: {
-            withAnimation(.spring(response: 0.3)) {
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.7)) {
                 isManageMode.toggle()
             }
         }) {
             Text(isManageMode ? "Done" : "Manage Profiles")
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.white.opacity(0.7))
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundColor(.white.opacity(0.9))
+                .padding(.horizontal, 28)
+                .padding(.vertical, 14)
                 .background(
                     Capsule()
-                        .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            Capsule()
+                                .stroke(
+                                    LinearGradient(
+                                        colors: [.white.opacity(0.3), .white.opacity(0.1)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: 1
+                                )
+                        )
+                        .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
                 )
         }
         .buttonStyle(.plain)
     }
 }
 
-// MARK: - Profile Card
+// MARK: - Glass Profile Card
 
-struct ProfileCard: View {
+struct GlassProfileCard: View {
     let profile: Profile
     let isManageMode: Bool
     let onSelect: () -> Void
@@ -157,75 +236,97 @@ struct ProfileCard: View {
     var body: some View {
         Button(action: onSelect) {
             VStack(spacing: 20) {
-                // Avatar
+                // Avatar with glass ring
                 ZStack {
-                    // Background circle
+                    // Outer glass ring
+                    Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 180, height: 180)
+                        .overlay(
+                            Circle()
+                                .stroke(
+                                    LinearGradient(
+                                        colors: isFocused 
+                                            ? [profileColor.opacity(0.8), profileColor.opacity(0.4)]
+                                            : [.white.opacity(0.3), .white.opacity(0.1)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: isFocused ? 4 : 2
+                                )
+                        )
+                        .shadow(
+                            color: isFocused ? profileColor.opacity(0.5) : .clear,
+                            radius: 30
+                        )
+                    
+                    // Inner colored circle
                     Circle()
                         .fill(
                             LinearGradient(
                                 colors: [
-                                    profileColor.opacity(0.8),
-                                    profileColor.opacity(0.4)
+                                    profileColor.opacity(0.9),
+                                    profileColor.opacity(0.5)
                                 ],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
-                        .frame(width: 160, height: 160)
+                        .frame(width: 150, height: 150)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                        )
                     
                     // Initial letter
                     Text(String(profile.name.prefix(1)).uppercased())
-                        .font(.system(size: 72, weight: .bold, design: .rounded))
+                        .font(.system(size: 64, weight: .bold, design: .rounded))
                         .foregroundColor(.white)
+                        .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
                     
-                    // Edit indicator
+                    // Edit indicator overlay
                     if isManageMode {
                         Circle()
-                            .fill(Color.black.opacity(0.5))
-                            .frame(width: 160, height: 160)
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 150, height: 150)
                         
                         Image(systemName: "pencil")
                             .font(.system(size: 40, weight: .medium))
                             .foregroundColor(.white)
                     }
                 }
-                .overlay(
-                    Circle()
-                        .stroke(
-                            isFocused ? Color.white : Color.clear,
-                            lineWidth: 4
+                
+                // Name with glass pill
+                VStack(spacing: 8) {
+                    Text(profile.name)
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(isFocused ? .white : .white.opacity(0.85))
+                    
+                    Text("\(getROMCount()) games")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.5))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(.ultraThinMaterial.opacity(0.5))
                         )
-                )
-                .shadow(
-                    color: isFocused ? profileColor.opacity(0.6) : .clear,
-                    radius: 30
-                )
-                
-                // Name
-                Text(profile.name)
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(isFocused ? .white : .white.opacity(0.7))
-                
-                // Game count
-                Text("\(getROMCount()) games")
-                    .font(.system(size: 14))
-                    .foregroundColor(.white.opacity(0.4))
+                }
             }
-            .scaleEffect(isFocused ? 1.05 : 1.0)
-            .animation(.spring(response: 0.3), value: isFocused)
+            .scaleEffect(isFocused ? 1.08 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isFocused)
         }
         .buttonStyle(.plain)
     }
     
     private func getROMCount() -> Int {
-        // TODO: Get actual count from ProfileManager
         return 0
     }
 }
 
-// MARK: - Add Profile Card
+// MARK: - Glass Add Profile Card
 
-struct AddProfileCard: View {
+struct GlassAddProfileCard: View {
     let onTap: () -> Void
     
     @Environment(\.isFocused) var isFocused
@@ -233,42 +334,65 @@ struct AddProfileCard: View {
     var body: some View {
         Button(action: onTap) {
             VStack(spacing: 20) {
-                // Plus icon
+                // Glass circle with plus
                 ZStack {
                     Circle()
-                        .stroke(
-                            isFocused ? Color.white : Color.white.opacity(0.3),
-                            lineWidth: 3
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 180, height: 180)
+                        .overlay(
+                            Circle()
+                                .stroke(
+                                    LinearGradient(
+                                        colors: isFocused 
+                                            ? [.white.opacity(0.6), .white.opacity(0.3)]
+                                            : [.white.opacity(0.25), .white.opacity(0.1)],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    ),
+                                    lineWidth: isFocused ? 3 : 2
+                                )
                         )
-                        .frame(width: 160, height: 160)
+                        .shadow(
+                            color: isFocused ? Color.white.opacity(0.2) : .clear,
+                            radius: 25
+                        )
                     
                     Image(systemName: "plus")
-                        .font(.system(size: 60, weight: .light))
-                        .foregroundColor(isFocused ? .white : .white.opacity(0.5))
+                        .font(.system(size: 56, weight: .light))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [.white.opacity(isFocused ? 0.9 : 0.6), .white.opacity(isFocused ? 0.7 : 0.4)],
+                                startPoint: .top,
+                                endPoint: .bottom
+                            )
+                        )
                 }
-                .shadow(
-                    color: isFocused ? Color.white.opacity(0.3) : .clear,
-                    radius: 20
-                )
                 
                 // Label
-                Text("Add Profile")
-                    .font(.system(size: 22, weight: .semibold))
-                    .foregroundColor(isFocused ? .white : .white.opacity(0.5))
-                
-                // Spacer for alignment
-                Text(" ")
-                    .font(.system(size: 14))
-                    .foregroundColor(.clear)
+                VStack(spacing: 8) {
+                    Text("Add Profile")
+                        .font(.system(size: 22, weight: .semibold))
+                        .foregroundColor(isFocused ? .white : .white.opacity(0.7))
+                    
+                    Text("New player")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.4))
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 4)
+                        .background(
+                            Capsule()
+                                .fill(.ultraThinMaterial.opacity(0.3))
+                        )
+                }
             }
-            .scaleEffect(isFocused ? 1.05 : 1.0)
-            .animation(.spring(response: 0.3), value: isFocused)
+            .scaleEffect(isFocused ? 1.08 : 1.0)
+            .animation(.spring(response: 0.35, dampingFraction: 0.7), value: isFocused)
         }
         .buttonStyle(.plain)
     }
 }
 
-// MARK: - Create Profile View
+// MARK: - Create Profile View (Glass)
 
 struct CreateProfileView: View {
     @ObservedObject var profileManager: ProfileManager
@@ -291,13 +415,23 @@ struct CreateProfileView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(red: 0.05, green: 0.05, blue: 0.1).ignoresSafeArea()
+                // Glass background
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.05, green: 0.05, blue: 0.12),
+                        Color(red: 0.08, green: 0.06, blue: 0.16),
+                        Color(red: 0.04, green: 0.04, blue: 0.1)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
                 VStack(spacing: 50) {
                     // Preview
                     profilePreview
                     
-                    // Name input
+                    // Name input with glass
                     VStack(spacing: 12) {
                         Text("Profile Name")
                             .font(.system(size: 18, weight: .medium))
@@ -310,26 +444,44 @@ struct CreateProfileView: View {
                             .multilineTextAlignment(.center)
                             .focused($isNameFieldFocused)
                             .frame(maxWidth: 400)
-                            .padding()
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 18)
                             .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.white.opacity(0.1))
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                    )
                             )
                     }
                     
-                    // Picture selection
-                    pictureSelector
+                    // Color selection
+                    colorSelector
                     
-                    // Create button
+                    // Create button (glass)
                     Button(action: createProfile) {
                         Text("Create Profile")
                             .font(.system(size: 20, weight: .semibold))
                             .foregroundColor(.white)
-                            .padding(.horizontal, 40)
-                            .padding(.vertical, 16)
+                            .padding(.horizontal, 48)
+                            .padding(.vertical, 18)
                             .background(
                                 Capsule()
-                                    .fill(isValidName ? Color(red: 0.9, green: 0.3, blue: 0.4) : Color.gray.opacity(0.3))
+                                    .fill(
+                                        isValidName 
+                                            ? LinearGradient(
+                                                colors: [Color(red: 0.9, green: 0.3, blue: 0.4), Color(red: 0.8, green: 0.2, blue: 0.5)],
+                                                startPoint: .leading,
+                                                endPoint: .trailing
+                                            )
+                                            : LinearGradient(colors: [Color.gray.opacity(0.3)], startPoint: .leading, endPoint: .trailing)
+                                    )
+                                    .overlay(
+                                        Capsule()
+                                            .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                                    )
+                                    .shadow(color: isValidName ? Color(red: 0.9, green: 0.3, blue: 0.4).opacity(0.4) : .clear, radius: 20)
                             )
                     }
                     .buttonStyle(.plain)
@@ -353,41 +505,61 @@ struct CreateProfileView: View {
         let color = ProfilePictureManager.shared.getColor(for: selectedPictureID)
         
         return ZStack {
+            // Glass ring
+            Circle()
+                .fill(.ultraThinMaterial)
+                .frame(width: 160, height: 160)
+                .overlay(
+                    Circle()
+                        .stroke(color.opacity(0.5), lineWidth: 3)
+                )
+                .shadow(color: color.opacity(0.4), radius: 25)
+            
+            // Inner circle
             Circle()
                 .fill(
                     LinearGradient(
-                        colors: [color.opacity(0.8), color.opacity(0.4)],
+                        colors: [color.opacity(0.9), color.opacity(0.5)],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
                 )
-                .frame(width: 140, height: 140)
+                .frame(width: 130, height: 130)
             
             Text(name.isEmpty ? "?" : String(name.prefix(1)).uppercased())
-                .font(.system(size: 64, weight: .bold, design: .rounded))
+                .font(.system(size: 56, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
         }
-        .shadow(color: color.opacity(0.5), radius: 20)
     }
     
-    private var pictureSelector: some View {
+    private var colorSelector: some View {
         VStack(spacing: 12) {
             Text("Choose Color")
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(.white.opacity(0.6))
             
-            HStack(spacing: 20) {
+            HStack(spacing: 24) {
                 ForEach(["default_player1", "default_player2", "default_player3", "default_player4"], id: \.self) { pictureID in
                     let color = ProfilePictureManager.shared.getColor(for: pictureID)
+                    let isSelected = selectedPictureID == pictureID
                     
                     Button(action: { selectedPictureID = pictureID }) {
-                        Circle()
-                            .fill(color)
-                            .frame(width: 50, height: 50)
-                            .overlay(
+                        ZStack {
+                            Circle()
+                                .fill(.ultraThinMaterial)
+                                .frame(width: 60, height: 60)
+                            
+                            Circle()
+                                .fill(color)
+                                .frame(width: 46, height: 46)
+                            
+                            if isSelected {
                                 Circle()
-                                    .stroke(Color.white, lineWidth: selectedPictureID == pictureID ? 3 : 0)
-                            )
+                                    .stroke(Color.white, lineWidth: 3)
+                                    .frame(width: 60, height: 60)
+                            }
+                        }
+                        .shadow(color: isSelected ? color.opacity(0.5) : .clear, radius: 15)
                     }
                     .buttonStyle(.plain)
                 }
@@ -406,7 +578,7 @@ struct CreateProfileView: View {
     }
 }
 
-// MARK: - Edit Profile View
+// MARK: - Edit Profile View (Glass)
 
 struct EditProfileView: View {
     @ObservedObject var profileManager: ProfileManager
@@ -432,10 +604,18 @@ struct EditProfileView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(red: 0.05, green: 0.05, blue: 0.1).ignoresSafeArea()
+                LinearGradient(
+                    colors: [
+                        Color(red: 0.05, green: 0.05, blue: 0.12),
+                        Color(red: 0.08, green: 0.06, blue: 0.16),
+                        Color(red: 0.04, green: 0.04, blue: 0.1)
+                    ],
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
                 
                 VStack(spacing: 50) {
-                    // Preview
                     profilePreview
                     
                     // Name input
@@ -450,19 +630,22 @@ struct EditProfileView: View {
                             .foregroundColor(.white)
                             .multilineTextAlignment(.center)
                             .frame(maxWidth: 400)
-                            .padding()
+                            .padding(.horizontal, 24)
+                            .padding(.vertical, 18)
                             .background(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .fill(Color.white.opacity(0.1))
+                                RoundedRectangle(cornerRadius: 16)
+                                    .fill(.ultraThinMaterial)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 16)
+                                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                                    )
                             )
                     }
                     
-                    // Picture selection
-                    pictureSelector
+                    colorSelector
                     
                     // Buttons
                     HStack(spacing: 30) {
-                        // Save button
                         Button(action: saveProfile) {
                             Text("Save Changes")
                                 .font(.system(size: 20, weight: .semibold))
@@ -471,22 +654,27 @@ struct EditProfileView: View {
                                 .padding(.vertical, 16)
                                 .background(
                                     Capsule()
-                                        .fill(isValidName ? Color(red: 0.9, green: 0.3, blue: 0.4) : Color.gray.opacity(0.3))
+                                        .fill(
+                                            isValidName
+                                                ? LinearGradient(colors: [Color(red: 0.9, green: 0.3, blue: 0.4), Color(red: 0.8, green: 0.2, blue: 0.5)], startPoint: .leading, endPoint: .trailing)
+                                                : LinearGradient(colors: [Color.gray.opacity(0.3)], startPoint: .leading, endPoint: .trailing)
+                                        )
+                                        .overlay(Capsule().stroke(Color.white.opacity(0.3), lineWidth: 1))
                                 )
                         }
                         .buttonStyle(.plain)
                         .disabled(!isValidName)
                         
-                        // Delete button
                         Button(action: { showingDeleteConfirmation = true }) {
-                            Text("Delete Profile")
+                            Text("Delete")
                                 .font(.system(size: 20, weight: .semibold))
                                 .foregroundColor(.red)
                                 .padding(.horizontal, 40)
                                 .padding(.vertical, 16)
                                 .background(
                                     Capsule()
-                                        .stroke(Color.red.opacity(0.5), lineWidth: 2)
+                                        .fill(.ultraThinMaterial)
+                                        .overlay(Capsule().stroke(Color.red.opacity(0.5), lineWidth: 2))
                                 )
                         }
                         .buttonStyle(.plain)
@@ -507,7 +695,7 @@ struct EditProfileView: View {
                 }
                 Button("Cancel", role: .cancel) { }
             } message: {
-                Text("This will permanently delete \"\(profile.name)\" and all saved games. This cannot be undone.")
+                Text("This will permanently delete \"\(profile.name)\" and all saved games.")
             }
         }
     }
@@ -517,40 +705,41 @@ struct EditProfileView: View {
         
         return ZStack {
             Circle()
-                .fill(
-                    LinearGradient(
-                        colors: [color.opacity(0.8), color.opacity(0.4)],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
-                .frame(width: 140, height: 140)
+                .fill(.ultraThinMaterial)
+                .frame(width: 160, height: 160)
+                .overlay(Circle().stroke(color.opacity(0.5), lineWidth: 3))
+                .shadow(color: color.opacity(0.4), radius: 25)
+            
+            Circle()
+                .fill(LinearGradient(colors: [color.opacity(0.9), color.opacity(0.5)], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .frame(width: 130, height: 130)
             
             Text(name.isEmpty ? "?" : String(name.prefix(1)).uppercased())
-                .font(.system(size: 64, weight: .bold, design: .rounded))
+                .font(.system(size: 56, weight: .bold, design: .rounded))
                 .foregroundColor(.white)
         }
-        .shadow(color: color.opacity(0.5), radius: 20)
     }
     
-    private var pictureSelector: some View {
+    private var colorSelector: some View {
         VStack(spacing: 12) {
             Text("Choose Color")
                 .font(.system(size: 18, weight: .medium))
                 .foregroundColor(.white.opacity(0.6))
             
-            HStack(spacing: 20) {
+            HStack(spacing: 24) {
                 ForEach(["default_player1", "default_player2", "default_player3", "default_player4"], id: \.self) { pictureID in
                     let color = ProfilePictureManager.shared.getColor(for: pictureID)
+                    let isSelected = selectedPictureID == pictureID
                     
                     Button(action: { selectedPictureID = pictureID }) {
-                        Circle()
-                            .fill(color)
-                            .frame(width: 50, height: 50)
-                            .overlay(
-                                Circle()
-                                    .stroke(Color.white, lineWidth: selectedPictureID == pictureID ? 3 : 0)
-                            )
+                        ZStack {
+                            Circle().fill(.ultraThinMaterial).frame(width: 60, height: 60)
+                            Circle().fill(color).frame(width: 46, height: 46)
+                            if isSelected {
+                                Circle().stroke(Color.white, lineWidth: 3).frame(width: 60, height: 60)
+                            }
+                        }
+                        .shadow(color: isSelected ? color.opacity(0.5) : .clear, radius: 15)
                     }
                     .buttonStyle(.plain)
                 }
@@ -560,11 +749,9 @@ struct EditProfileView: View {
     
     private func saveProfile() {
         guard isValidName else { return }
-        
         var updatedProfile = profile
         updatedProfile.name = name.trimmingCharacters(in: .whitespacesAndNewlines)
         updatedProfile.pictureID = selectedPictureID
-        
         profileManager.updateProfile(updatedProfile)
         dismiss()
     }
@@ -575,4 +762,3 @@ struct EditProfileView: View {
         print("Selected: \(profile.name)")
     }
 }
-

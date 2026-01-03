@@ -2,7 +2,7 @@
 //  ContentView.swift
 //  NesCaster
 //
-//  Main content view with tab navigation
+//  Main content view with Liquid Glass UI
 //
 
 import SwiftUI
@@ -21,8 +21,8 @@ struct ContentView: View {
     
     var body: some View {
         ZStack {
-            // Atmospheric background
-            backgroundGradient
+            // Liquid Glass background
+            liquidGlassBackground
             
             if appState.isEmulatorRunning {
                 EmulatorView()
@@ -35,42 +35,71 @@ struct ContentView: View {
         .animation(.easeInOut(duration: 0.3), value: appState.isEmulatorRunning)
     }
     
-    // MARK: - Background
+    // MARK: - Liquid Glass Background
     
-    private var backgroundGradient: some View {
+    private var liquidGlassBackground: some View {
         ZStack {
-            // Deep space gradient
+            // Deep base
             LinearGradient(
                 colors: [
-                    Color(red: 0.02, green: 0.02, blue: 0.08),
-                    Color(red: 0.05, green: 0.03, blue: 0.12),
-                    Color(red: 0.02, green: 0.02, blue: 0.06)
+                    Color(red: 0.02, green: 0.02, blue: 0.06),
+                    Color(red: 0.04, green: 0.03, blue: 0.1),
+                    Color(red: 0.02, green: 0.02, blue: 0.05)
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             
-            // Subtle accent glow
-            RadialGradient(
-                colors: [
-                    Color(red: 0.8, green: 0.2, blue: 0.3).opacity(0.15),
-                    Color.clear
-                ],
-                center: .topTrailing,
-                startRadius: 100,
-                endRadius: 800
-            )
+            // Animated orb 1 - Coral/Pink
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(red: 0.95, green: 0.3, blue: 0.4).opacity(0.35),
+                            Color(red: 0.95, green: 0.3, blue: 0.4).opacity(0)
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 400
+                    )
+                )
+                .frame(width: 800, height: 800)
+                .blur(radius: 100)
+                .offset(x: 300, y: -200)
             
-            // Secondary accent
-            RadialGradient(
-                colors: [
-                    Color(red: 0.2, green: 0.4, blue: 0.8).opacity(0.1),
-                    Color.clear
-                ],
-                center: .bottomLeading,
-                startRadius: 50,
-                endRadius: 600
-            )
+            // Animated orb 2 - Blue
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(red: 0.2, green: 0.4, blue: 0.9).opacity(0.25),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 350
+                    )
+                )
+                .frame(width: 700, height: 700)
+                .blur(radius: 80)
+                .offset(x: -400, y: 300)
+            
+            // Subtle purple accent
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [
+                            Color(red: 0.5, green: 0.2, blue: 0.7).opacity(0.2),
+                            Color.clear
+                        ],
+                        center: .center,
+                        startRadius: 0,
+                        endRadius: 250
+                    )
+                )
+                .frame(width: 500, height: 500)
+                .blur(radius: 60)
+                .offset(x: 100, y: 400)
         }
         .ignoresSafeArea()
     }
@@ -79,13 +108,13 @@ struct ContentView: View {
     
     private var mainContent: some View {
         VStack(spacing: 0) {
-            // Header
+            // Glass Header
             headerView
-                .padding(.top, 60)
-                .padding(.bottom, 40)
+                .padding(.top, 50)
+                .padding(.bottom, 30)
             
-            // Tab Navigation
-            tabBar
+            // Glass Tab Bar
+            glassTabBar
                 .padding(.bottom, 30)
             
             // Content Area
@@ -102,32 +131,49 @@ struct ContentView: View {
         .padding(.horizontal, 80)
     }
     
-    // MARK: - Header
+    // MARK: - Glass Header
     
     private var headerView: some View {
         HStack(spacing: 20) {
-            // Logo
-            Image(systemName: "gamecontroller.fill")
-                .font(.system(size: 52, weight: .medium))
-                .foregroundStyle(
-                    LinearGradient(
-                        colors: [
-                            Color(red: 0.95, green: 0.3, blue: 0.4),
-                            Color(red: 0.85, green: 0.2, blue: 0.5)
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
+            // Logo with glass backing
+            ZStack {
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 80, height: 80)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [.white.opacity(0.3), .white.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
                     )
-                )
-                .shadow(color: Color(red: 0.95, green: 0.3, blue: 0.4).opacity(0.5), radius: 20)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text("NESCASTER")
-                    .font(.system(size: 48, weight: .bold, design: .rounded))
-                    .tracking(4)
+                
+                Image(systemName: "gamecontroller.fill")
+                    .font(.system(size: 40, weight: .medium))
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [.white, .white.opacity(0.8)],
+                            colors: [
+                                Color(red: 0.95, green: 0.35, blue: 0.45),
+                                Color(red: 0.85, green: 0.25, blue: 0.55)
+                            ],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
+            }
+            .shadow(color: Color(red: 0.95, green: 0.3, blue: 0.4).opacity(0.3), radius: 20)
+            
+            VStack(alignment: .leading, spacing: 6) {
+                Text("NESCASTER")
+                    .font(.system(size: 44, weight: .bold, design: .rounded))
+                    .tracking(3)
+                    .foregroundStyle(
+                        LinearGradient(
+                            colors: [.white, .white.opacity(0.85)],
                             startPoint: .leading,
                             endPoint: .trailing
                         )
@@ -135,38 +181,41 @@ struct ContentView: View {
                 
                 if let profile = profileManager.activeProfile {
                     Text("Playing as \(profile.name)")
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.5))
-                        .tracking(2)
                 } else {
                     Text("Premium NES Experience")
-                        .font(.system(size: 18, weight: .medium))
+                        .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.5))
-                        .tracking(2)
                 }
             }
             
             Spacer()
             
-            // Profile indicator
+            // Profile indicator (glass)
             if let profile = profileManager.activeProfile {
-                profileIndicator(profile)
+                glassProfileIndicator(profile)
             }
             
-            // Performance badge
-            performanceBadge
+            // Performance badge (glass)
+            glassPerformanceBadge
         }
     }
     
-    private func profileIndicator(_ profile: Profile) -> some View {
+    private func glassProfileIndicator(_ profile: Profile) -> some View {
         let color = ProfilePictureManager.shared.getColor(for: profile.pictureID)
         
         return Button(action: switchProfile) {
-            HStack(spacing: 12) {
+            HStack(spacing: 14) {
+                // Avatar
                 ZStack {
                     Circle()
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 48, height: 48)
+                    
+                    Circle()
                         .fill(color)
-                        .frame(width: 40, height: 40)
+                        .frame(width: 38, height: 38)
                     
                     Text(String(profile.name.prefix(1)).uppercased())
                         .font(.system(size: 18, weight: .bold))
@@ -175,68 +224,105 @@ struct ContentView: View {
                 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(profile.name)
-                        .font(.system(size: 14, weight: .semibold))
+                        .font(.system(size: 15, weight: .semibold))
                         .foregroundColor(.white)
                     
-                    Text("Switch Profile")
-                        .font(.system(size: 11))
+                    Text("Switch")
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundColor(.white.opacity(0.5))
                 }
+                
+                Image(systemName: "chevron.down")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.4))
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 10)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 12)
             .background(
                 Capsule()
                     .fill(.ultraThinMaterial)
                     .overlay(
                         Capsule()
-                            .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                            .stroke(
+                                LinearGradient(
+                                    colors: [.white.opacity(0.25), .white.opacity(0.1)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                ),
+                                lineWidth: 1
+                            )
                     )
+                    .shadow(color: .black.opacity(0.2), radius: 15, y: 5)
             )
         }
         .buttonStyle(.plain)
     }
     
-    private var performanceBadge: some View {
-        HStack(spacing: 8) {
+    private var glassPerformanceBadge: some View {
+        HStack(spacing: 10) {
+            // Animated pulse
             Circle()
                 .fill(Color.green)
                 .frame(width: 8, height: 8)
-                .shadow(color: .green, radius: 4)
+                .shadow(color: .green, radius: 6)
             
             Text("4K • 120fps")
                 .font(.system(size: 14, weight: .semibold, design: .monospaced))
-                .foregroundColor(.white.opacity(0.7))
+                .foregroundColor(.white.opacity(0.8))
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
+        .padding(.horizontal, 18)
+        .padding(.vertical, 10)
         .background(
             Capsule()
                 .fill(.ultraThinMaterial)
                 .overlay(
                     Capsule()
-                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                        .stroke(
+                            LinearGradient(
+                                colors: [.white.opacity(0.2), .white.opacity(0.08)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
                 )
         )
     }
     
-    // MARK: - Tab Bar
+    // MARK: - Glass Tab Bar
     
-    private var tabBar: some View {
-        HStack(spacing: 40) {
+    private var glassTabBar: some View {
+        HStack(spacing: 8) {
             ForEach(Tab.allCases, id: \.self) { tab in
-                TabButton(
+                GlassTabButton(
                     title: tab.rawValue,
                     icon: tab == .library ? "square.grid.2x2.fill" : "gearshape.fill",
                     isSelected: selectedTab == tab
                 ) {
-                    withAnimation(.spring(response: 0.3)) {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
                         selectedTab = tab
                     }
                 }
                 .focused($focusedTab, equals: tab)
             }
         }
+        .padding(8)
+        .background(
+            Capsule()
+                .fill(.ultraThinMaterial.opacity(0.6))
+                .overlay(
+                    Capsule()
+                        .stroke(
+                            LinearGradient(
+                                colors: [.white.opacity(0.2), .white.opacity(0.05)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
+        )
     }
     
     // MARK: - Actions
@@ -246,9 +332,9 @@ struct ContentView: View {
     }
 }
 
-// MARK: - Tab Button
+// MARK: - Glass Tab Button
 
-struct TabButton: View {
+struct GlassTabButton: View {
     let title: String
     let icon: String
     let isSelected: Bool
@@ -260,27 +346,35 @@ struct TabButton: View {
         Button(action: action) {
             HStack(spacing: 12) {
                 Image(systemName: icon)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
                 
                 Text(title)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 18, weight: .semibold))
             }
-            .foregroundColor(isSelected ? .white : .white.opacity(0.5))
+            .foregroundColor(isSelected ? .white : .white.opacity(0.6))
             .padding(.horizontal, 28)
             .padding(.vertical, 14)
             .background(
                 Capsule()
-                    .fill(isSelected ? Color.white.opacity(0.15) : Color.clear)
-            )
-            .overlay(
-                Capsule()
-                    .stroke(
-                        isSelected ? Color.white.opacity(0.3) : Color.clear,
-                        lineWidth: 1
+                    .fill(
+                        isSelected 
+                            ? AnyShapeStyle(LinearGradient(
+                                colors: [Color.white.opacity(0.2), Color.white.opacity(0.1)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ))
+                            : AnyShapeStyle(Color.clear)
+                    )
+                    .overlay(
+                        Capsule()
+                            .stroke(
+                                isSelected ? Color.white.opacity(0.3) : Color.clear,
+                                lineWidth: 1
+                            )
                     )
             )
             .scaleEffect(isFocused ? 1.05 : 1.0)
-            .animation(.spring(response: 0.25), value: isFocused)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isFocused)
         }
         .buttonStyle(.plain)
     }

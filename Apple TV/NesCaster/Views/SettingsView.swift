@@ -2,728 +2,865 @@
 //  SettingsView.swift
 //  NesCaster
 //
-//  Comprehensive settings with per-profile support
+//  Settings with Liquid Glass UI
 //
 
 import SwiftUI
 
 struct SettingsView: View {
     
-    @EnvironmentObject var appState: AppState
     @ObservedObject var profileManager: ProfileManager
-    @State private var settings: ProfileSettings
-    @State private var showingControllerMapping = false
-    @State private var showingContentTransfer = false
-    @State private var showingSwitchProfile = false
     
-    init(profileManager: ProfileManager) {
-        self.profileManager = profileManager
-        // Load settings for active profile or use defaults
-        if let profile = profileManager.activeProfile {
-            _settings = State(initialValue: profileManager.loadSettings(for: profile))
-        } else {
-            _settings = State(initialValue: ProfileSettings())
+    // Display settings
+    @AppStorage("scalingMode") private var scalingMode = "4K"
+    @AppStorage("integerScaling") private var integerScaling = true
+    @AppStorage("overscanCrop") private var overscanCrop = true
+    
+    // Performance settings
+    @AppStorage("targetFrameRate") private var targetFrameRate = 120
+    @AppStorage("frameInterpolation") private var frameInterpolation = true
+    @AppStorage("runAheadFrames") private var runAheadFrames = 2
+    @AppStorage("vsyncEnabled") private var vsyncEnabled = true
+    
+    // Audio settings
+    @AppStorage("audioLatencyMs") private var audioLatencyMs = 32
+    @AppStorage("masterVolume") private var masterVolume = 0.8
+    
+    // Save state settings
+    @AppStorage("saveStateHistory") private var saveStateHistory = 5
+    @AppStorage("autoSaveEnabled") private var autoSaveEnabled = true
+    
+    @State private var selectedSection: SettingSection = .display
+    
+    enum SettingSection: String, CaseIterable {
+        case display = "Display"
+        case performance = "Performance"
+        case audio = "Audio"
+        case saveStates = "Save States"
+        case controllers = "Controllers"
+        case profile = "Profile"
+        case about = "About"
+        
+        var icon: String {
+            switch self {
+            case .display: return "tv"
+            case .performance: return "gauge.high"
+            case .audio: return "speaker.wave.3.fill"
+            case .saveStates: return "square.stack.fill"
+            case .controllers: return "gamecontroller.fill"
+            case .profile: return "person.fill"
+            case .about: return "info.circle.fill"
+            }
+        }
+        
+        var color: Color {
+            switch self {
+            case .display: return Color(red: 0.4, green: 0.6, blue: 0.95)
+            case .performance: return Color(red: 0.95, green: 0.6, blue: 0.35)
+            case .audio: return Color(red: 0.55, green: 0.85, blue: 0.55)
+            case .saveStates: return Color(red: 0.7, green: 0.5, blue: 0.9)
+            case .controllers: return Color(red: 0.95, green: 0.35, blue: 0.45)
+            case .profile: return Color(red: 0.9, green: 0.75, blue: 0.3)
+            case .about: return Color(red: 0.6, green: 0.7, blue: 0.75)
+            }
         }
     }
     
     var body: some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 50) {
-                // Profile Section
-                settingsSection(
-                    title: "Profile",
-                    icon: "person.crop.circle.fill",
-                    content: profileSection
-                )
-                
-                // Save States Section
-                settingsSection(
-                    title: "Save States",
-                    icon: "square.and.arrow.down.fill",
-                    content: saveStateSettings
-                )
-                
-                // Display Settings
-                settingsSection(
-                    title: "Display",
-                    icon: "display",
-                    content: displaySettings
-                )
-                
-                // Performance Settings
-                settingsSection(
-                    title: "Performance",
-                    icon: "speedometer",
-                    content: performanceSettings
-                )
-                
-                // Audio Settings
-                settingsSection(
-                    title: "Audio",
-                    icon: "speaker.wave.3.fill",
-                    content: audioSettings
-                )
-                
-                // Controller Settings
-                settingsSection(
-                    title: "Controller",
-                    icon: "gamecontroller.fill",
-                    content: controllerSettings
-                )
-                
-                // Content Transfer (TV only)
-                #if os(tvOS)
-                settingsSection(
-                    title: "Content Transfer",
-                    icon: "arrow.down.circle.fill",
-                    content: contentTransferSection
-                )
-                #endif
-                
-                // About
-                settingsSection(
-                    title: "About",
-                    icon: "info.circle.fill",
-                    content: aboutSection
-                )
+        HStack(spacing: 40) {
+            // Left sidebar - Glass navigation
+            glassNavigationSidebar
+            
+            // Right content area - Glass panels
+            glassContentArea
+        }
+    }
+    
+    // MARK: - Glass Navigation Sidebar
+    
+    private var glassNavigationSidebar: some View {
+        VStack(spacing: 8) {
+            ForEach(SettingSection.allCases, id: \.self) { section in
+                GlassNavigationButton(
+                    title: section.rawValue,
+                    icon: section.icon,
+                    color: section.color,
+                    isSelected: selectedSection == section
+                ) {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
+                        selectedSection = section
+                    }
+                }
             }
-            .padding(.bottom, 80)
         }
-        .onChange(of: settings) { _, newSettings in
-            saveSettings(newSettings)
-        }
-        .sheet(isPresented: $showingControllerMapping) {
-            ControllerMappingView(profileManager: profileManager)
-        }
-        .sheet(isPresented: $showingContentTransfer) {
-            ContentTransferView()
-        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 28)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28)
+                        .stroke(
+                            LinearGradient(
+                                colors: [.white.opacity(0.2), .white.opacity(0.08)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .shadow(color: .black.opacity(0.3), radius: 25, y: 10)
+        )
+        .frame(width: 280)
     }
     
-    // MARK: - Save Settings
+    // MARK: - Glass Content Area
     
-    private func saveSettings(_ newSettings: ProfileSettings) {
-        guard let profile = profileManager.activeProfile else { return }
-        profileManager.saveSettings(newSettings, for: profile)
-    }
-    
-    // MARK: - Section Builder
-    
-    private func settingsSection<Content: View>(
-        title: String,
-        icon: String,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 20) {
-            // Header
-            HStack(spacing: 12) {
-                Image(systemName: icon)
-                    .font(.system(size: 20, weight: .semibold))
-                    .foregroundColor(Color(red: 0.95, green: 0.3, blue: 0.4))
+    private var glassContentArea: some View {
+        ScrollView {
+            VStack(spacing: 0) {
+                // Section header
+                glassSectionHeader(selectedSection)
+                    .padding(.bottom, 32)
                 
-                Text(title)
-                    .font(.system(size: 26, weight: .bold))
+                // Section content
+                Group {
+                    switch selectedSection {
+                    case .display:
+                        displaySettings
+                    case .performance:
+                        performanceSettings
+                    case .audio:
+                        audioSettings
+                    case .saveStates:
+                        saveStateSettings
+                    case .controllers:
+                        controllerSettings
+                    case .profile:
+                        profileSettings
+                    case .about:
+                        aboutSettings
+                    }
+                }
+            }
+            .padding(36)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(
+            RoundedRectangle(cornerRadius: 28)
+                .fill(.ultraThinMaterial.opacity(0.6))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 28)
+                        .stroke(
+                            LinearGradient(
+                                colors: [.white.opacity(0.15), .white.opacity(0.05)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            ),
+                            lineWidth: 1
+                        )
+                )
+                .shadow(color: .black.opacity(0.2), radius: 25, y: 10)
+        )
+    }
+    
+    // MARK: - Glass Section Header
+    
+    private func glassSectionHeader(_ section: SettingSection) -> some View {
+        HStack(spacing: 18) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 60, height: 60)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(section.color.opacity(0.3))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 16)
+                            .stroke(section.color.opacity(0.5), lineWidth: 1)
+                    )
+                
+                Image(systemName: section.icon)
+                    .font(.system(size: 26, weight: .semibold))
+                    .foregroundColor(section.color)
+            }
+            .shadow(color: section.color.opacity(0.3), radius: 15)
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(section.rawValue)
+                    .font(.system(size: 32, weight: .bold))
                     .foregroundColor(.white)
+                
+                Text(sectionDescription(section))
+                    .font(.system(size: 15))
+                    .foregroundColor(.white.opacity(0.5))
             }
             
-            // Content
-            VStack(spacing: 0) {
-                content()
+            Spacer()
+        }
+    }
+    
+    private func sectionDescription(_ section: SettingSection) -> String {
+        switch section {
+        case .display: return "Resolution, scaling, and visual options"
+        case .performance: return "Frame rate and optimization"
+        case .audio: return "Sound output and latency"
+        case .saveStates: return "Save management and history"
+        case .controllers: return "Input devices and mapping"
+        case .profile: return "Account and preferences"
+        case .about: return "App information and credits"
+        }
+    }
+    
+    // MARK: - Display Settings
+    
+    private var displaySettings: some View {
+        VStack(spacing: 20) {
+            GlassSettingCard(
+            title: "Scaling Mode",
+                subtitle: "Choose output resolution",
+                icon: "arrow.up.left.and.arrow.down.right"
+            ) {
+                Picker("", selection: $scalingMode) {
+                    Text("Native (256×240)").tag("Native")
+                    Text("HD (1280×720)").tag("HD")
+                    Text("Full HD (1920×1080)").tag("FHD")
+                    Text("4K (3840×2160)").tag("4K")
+                }
+                .pickerStyle(.menu)
+                .tint(.white)
             }
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.ultraThinMaterial.opacity(0.3))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 20)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                    )
+            
+            GlassToggleCard(
+            title: "Integer Scaling",
+                subtitle: "Sharp pixels without blurring",
+                icon: "square.grid.3x3",
+                isOn: $integerScaling
+            )
+            
+            GlassToggleCard(
+                title: "Crop Overscan",
+                subtitle: "Hide unused screen edges",
+                icon: "crop",
+                isOn: $overscanCrop
             )
         }
     }
     
-    // MARK: - Profile Section
+    // MARK: - Performance Settings
     
-    @ViewBuilder
-    private func profileSection() -> some View {
-        if let profile = profileManager.activeProfile {
-            let color = ProfilePictureManager.shared.getColor(for: profile.pictureID)
-            
-            SettingsRow(
-                title: profile.name,
-                subtitle: "\(profileManager.getROMCount(for: profile)) games • Active",
-                icon: "person.fill"
+    private var performanceSettings: some View {
+        VStack(spacing: 20) {
+            GlassSettingCard(
+            title: "Target Frame Rate",
+                subtitle: "Higher rates on supported displays",
+                icon: "speedometer"
             ) {
-                ZStack {
-                    Circle()
-                        .fill(color)
-                        .frame(width: 40, height: 40)
-                    
-                    Text(String(profile.name.prefix(1)).uppercased())
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
+                Picker("", selection: $targetFrameRate) {
+                    Text("60 fps").tag(60)
+                    Text("120 fps").tag(120)
                 }
+                .pickerStyle(.segmented)
             }
             
-            Divider().background(Color.white.opacity(0.1))
+            GlassToggleCard(
+            title: "Frame Interpolation",
+                subtitle: "Smooth motion between frames",
+                icon: "waveform.path.ecg",
+                isOn: $frameInterpolation
+            )
             
-            Button(action: { showingSwitchProfile = true }) {
-                SettingsRow(
-                    title: "Switch Profile",
-                    subtitle: "Change to a different player",
-                    icon: "person.2.fill"
-                ) {
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.white.opacity(0.3))
+            GlassSettingCard(
+                title: "Run-Ahead Frames",
+                subtitle: "Reduce input latency",
+            icon: "hare.fill"
+        ) {
+                Picker("", selection: $runAheadFrames) {
+                    Text("Off").tag(0)
+                    Text("1 frame").tag(1)
+                    Text("2 frames").tag(2)
+                    Text("3 frames").tag(3)
                 }
+                .pickerStyle(.menu)
+                .tint(.white)
             }
-            .buttonStyle(.plain)
-        } else {
-            SettingsRow(
-                title: "No Profile Selected",
-                subtitle: "Please select a profile",
-                icon: "person.fill.questionmark"
+            
+            GlassToggleCard(
+            title: "VSync",
+            subtitle: "Prevent screen tearing",
+                icon: "display",
+                isOn: $vsyncEnabled
+            )
+        }
+    }
+    
+    // MARK: - Audio Settings
+    
+    private var audioSettings: some View {
+        VStack(spacing: 20) {
+            GlassSettingCard(
+                title: "Master Volume",
+                subtitle: "Audio output level",
+                icon: "speaker.wave.3.fill"
             ) {
-                EmptyView()
+                Picker("", selection: $masterVolume) {
+                    Text("Muted").tag(0.0)
+                    Text("25%").tag(0.25)
+                    Text("50%").tag(0.5)
+                    Text("75%").tag(0.75)
+                    Text("100%").tag(1.0)
+                }
+                .pickerStyle(.menu)
+                .tint(.white)
+            }
+            
+            GlassSettingCard(
+            title: "Audio Latency",
+                subtitle: "Lower = more responsive, may crackle",
+                icon: "clock.fill"
+            ) {
+                Picker("", selection: $audioLatencyMs) {
+                    Text("16 ms").tag(16)
+                    Text("32 ms").tag(32)
+                    Text("48 ms").tag(48)
+                    Text("64 ms").tag(64)
+                }
+                .pickerStyle(.menu)
+                .tint(.white)
             }
         }
     }
     
     // MARK: - Save State Settings
     
-    @ViewBuilder
-    private func saveStateSettings() -> some View {
-        SettingsRow(
-            title: "Save History Size",
-            subtitle: "Number of save states to keep",
-            icon: "clock.arrow.circlepath"
-        ) {
-            Picker("History Size", selection: $settings.saveHistorySize) {
-                Text("5").tag(5)
-                Text("10").tag(10)
-                Text("15").tag(15)
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 180)
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "Auto-Save",
-            subtitle: "Automatically save during gameplay",
-            icon: "arrow.clockwise.circle.fill"
-        ) {
-            Toggle("", isOn: $settings.autoSaveEnabled)
-                .labelsHidden()
-        }
-        
-        if settings.autoSaveEnabled {
-            Divider().background(Color.white.opacity(0.1))
-            
-            SettingsRow(
-                title: "Save on Level Complete",
-                subtitle: "Auto-detect level completion",
-                icon: "flag.checkered"
+    private var saveStateSettings: some View {
+        VStack(spacing: 20) {
+            GlassSettingCard(
+                title: "History Size",
+                subtitle: "Number of save states to keep",
+                icon: "clock.arrow.circlepath"
             ) {
-                Toggle("", isOn: $settings.autoSaveOnLevelComplete)
-                    .labelsHidden()
-            }
-            
-            Divider().background(Color.white.opacity(0.1))
-            
-            SettingsRow(
-                title: "Save Interval",
-                subtitle: settings.autoSaveIntervalMinutes == 0 ? "Disabled" : "Every \(settings.autoSaveIntervalMinutes) minutes",
-                icon: "timer"
-            ) {
-                Picker("Interval", selection: $settings.autoSaveIntervalMinutes) {
-                    Text("Off").tag(0)
-                    Text("5 min").tag(5)
-                    Text("10 min").tag(10)
-                    Text("15 min").tag(15)
+                Picker("", selection: $saveStateHistory) {
+                    Text("5 saves").tag(5)
+                    Text("10 saves").tag(10)
+                    Text("15 saves").tag(15)
+                    Text("20 saves").tag(20)
                 }
                 .pickerStyle(.menu)
-            }
-        }
-    }
-    
-    // MARK: - Display Settings
-    
-    @ViewBuilder
-    private func displaySettings() -> some View {
-        SettingsRow(
-            title: "Scaling Mode",
-            subtitle: settings.scalingMode.rawValue,
-            icon: "aspectratio.fill"
-        ) {
-            Picker("Scaling", selection: $settings.scalingMode) {
-                ForEach(ProfileSettings.ScalingMode.allCases, id: \.self) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
-            }
-            .pickerStyle(.menu)
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "Scanlines",
-            subtitle: "CRT-style scanline effect",
-            icon: "line.3.horizontal"
-        ) {
-            Toggle("", isOn: $settings.showScanlines)
-                .labelsHidden()
-        }
-        
-        if settings.showScanlines {
-            Divider().background(Color.white.opacity(0.1))
-            
-            SettingsRow(
-                title: "Scanline Intensity",
-                subtitle: "\(Int(settings.scanlineIntensity * 100))%",
-                icon: "slider.horizontal.3"
-            ) {
-                // Slider would go here for tvOS
-                Text("\(Int(settings.scanlineIntensity * 100))%")
-                    .foregroundColor(.white.opacity(0.5))
-            }
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "CRT Effect",
-            subtitle: "Screen curvature and bloom",
-            icon: "tv"
-        ) {
-            Toggle("", isOn: $settings.showCRTEffect)
-                .labelsHidden()
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "Show FPS Counter",
-            subtitle: "Display frame rate overlay",
-            icon: "gauge.with.dots.needle.bottom.50percent"
-        ) {
-            Toggle("", isOn: $settings.showFPSCounter)
-                .labelsHidden()
-        }
-    }
-    
-    // MARK: - Performance Settings
-    
-    @ViewBuilder
-    private func performanceSettings() -> some View {
-        SettingsRow(
-            title: "Target Frame Rate",
-            subtitle: "Requires compatible display",
-            icon: "film.stack"
-        ) {
-            Picker("Frame Rate", selection: $appState.targetFrameRate) {
-                ForEach(AppState.FrameRate.allCases, id: \.self) { rate in
-                    Text(rate.rawValue).tag(rate)
-                }
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 200)
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "Frame Interpolation",
-            subtitle: "Smooth 60→120fps conversion",
-            icon: "waveform.path"
-        ) {
-            Toggle("", isOn: .constant(true))
-                .labelsHidden()
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "Run-Ahead",
-            subtitle: "Reduce input latency by 1 frame",
-            icon: "hare.fill"
-        ) {
-            Toggle("", isOn: .constant(true))
-                .labelsHidden()
-        }
-    }
-    
-    // MARK: - Audio Settings
-    
-    @ViewBuilder
-    private func audioSettings() -> some View {
-        SettingsRow(
-            title: "Master Volume",
-            subtitle: "\(Int(settings.masterVolume * 100))%",
-            icon: "speaker.wave.2.fill"
-        ) {
-            // Volume control
-            Text("\(Int(settings.masterVolume * 100))%")
-                .foregroundColor(.white.opacity(0.5))
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "Audio Latency",
-            subtitle: settings.audioLatencyMode.rawValue,
-            icon: "waveform"
-        ) {
-            Picker("Latency", selection: $settings.audioLatencyMode) {
-                ForEach(ProfileSettings.AudioLatencyMode.allCases, id: \.self) { mode in
-                    Text(mode.rawValue).tag(mode)
-                }
-            }
-            .pickerStyle(.segmented)
-            .frame(width: 200)
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        // Audio Channels
-        VStack(spacing: 0) {
-            SettingsRow(
-                title: "Audio Channels",
-                subtitle: "Enable/disable NES audio channels",
-                icon: "pianokeys"
-            ) {
-                EmptyView()
+                .tint(.white)
             }
             
+            GlassToggleCard(
+                title: "Auto-Save",
+                subtitle: "Save progress after each level",
+                icon: "arrow.clockwise.circle.fill",
+                isOn: $autoSaveEnabled
+            )
+            
+            // Info card
             HStack(spacing: 16) {
-                ChannelToggle(label: "Square 1", isOn: $settings.enableSquare1)
-                ChannelToggle(label: "Square 2", isOn: $settings.enableSquare2)
-                ChannelToggle(label: "Triangle", isOn: $settings.enableTriangle)
-                ChannelToggle(label: "Noise", isOn: $settings.enableNoise)
-                ChannelToggle(label: "DMC", isOn: $settings.enableDMC)
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(.yellow)
+                
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Smart Save History")
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(.white)
+                    
+                    Text("New saves push oldest off the stack. Load presents dropdown of recent saves.")
+                        .font(.system(size: 13))
+                .foregroundColor(.white.opacity(0.5))
+                }
+                
+                Spacer()
             }
-            .padding(.horizontal, 24)
-            .padding(.bottom, 18)
+            .padding(20)
+            .background(
+                RoundedRectangle(cornerRadius: 18)
+                    .fill(.ultraThinMaterial.opacity(0.5))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 18)
+                            .stroke(Color.yellow.opacity(0.3), lineWidth: 1)
+                    )
+            )
         }
     }
     
     // MARK: - Controller Settings
     
-    @ViewBuilder
-    private func controllerSettings() -> some View {
-        SettingsRow(
-            title: "Connected Controllers",
-            subtitle: "1 controller connected",
-            icon: "gamecontroller"
-        ) {
-            Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        Button(action: { showingControllerMapping = true }) {
-            SettingsRow(
-                title: "Button Mapping",
-                subtitle: "Customize controller layout",
-                icon: "square.grid.3x3.middle.filled"
-            ) {
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.white.opacity(0.3))
-            }
-        }
-        .buttonStyle(.plain)
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "Quick Save Button",
-            subtitle: "Left Trigger (L2)",
-            icon: "square.and.arrow.down"
-        ) {
-            Text("L2")
-                .font(.system(size: 14, weight: .medium, design: .monospaced))
-                .foregroundColor(.white.opacity(0.5))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.white.opacity(0.1))
+    private var controllerSettings: some View {
+        VStack(spacing: 20) {
+            // Connected controllers
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Connected Controllers")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.7))
+                
+                GlassControllerCard(
+                    name: "Siri Remote",
+                    type: "Built-in",
+                    status: .connected
                 )
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "Quick Load Button",
-            subtitle: "Right Trigger (R2)",
-            icon: "square.and.arrow.up"
-        ) {
-            Text("R2")
-                .font(.system(size: 14, weight: .medium, design: .monospaced))
-                .foregroundColor(.white.opacity(0.5))
-                .padding(.horizontal, 12)
-                .padding(.vertical, 6)
-                .background(
-                    RoundedRectangle(cornerRadius: 6)
-                        .fill(Color.white.opacity(0.1))
+                
+                GlassControllerCard(
+                    name: "No External Controller",
+                    type: "Pair via Settings",
+                    status: .disconnected
                 )
-        }
-    }
-    
-    // MARK: - Content Transfer Section
-    
-    @ViewBuilder
-    private func contentTransferSection() -> some View {
-        Button(action: { showingContentTransfer = true }) {
-            SettingsRow(
-                title: "Add ROMs & Pictures",
-                subtitle: "Transfer files from your phone or computer",
-                icon: "qrcode"
-            ) {
-                Image(systemName: "chevron.right")
-                    .foregroundColor(.white.opacity(0.3))
             }
-        }
-        .buttonStyle(.plain)
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "How It Works",
-            subtitle: "Scan QR code on same Wi-Fi network to upload files",
-            icon: "questionmark.circle"
-        ) {
-            EmptyView()
-        }
-    }
-    
-    // MARK: - About Section
-    
-    @ViewBuilder
-    private func aboutSection() -> some View {
-        SettingsRow(
-            title: "Version",
-            subtitle: "NesCaster 1.0.0 (Build 1)",
-            icon: "tag.fill"
-        ) {
-            EmptyView()
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "Emulation Core",
-            subtitle: "Mesen (Modified for low-latency)",
-            icon: "cpu.fill"
-        ) {
-            EmptyView()
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "Renderer",
-            subtitle: "Metal 3 • GPU Accelerated • 120fps",
-            icon: "square.stack.3d.up.fill"
-        ) {
-            EmptyView()
-        }
-        
-        Divider().background(Color.white.opacity(0.1))
-        
-        SettingsRow(
-            title: "Open Source Licenses",
-            subtitle: "View third-party licenses",
-            icon: "doc.text"
-        ) {
+            
+            Divider()
+                .background(Color.white.opacity(0.1))
+                .padding(.vertical, 10)
+            
+            // Controller settings
+            GlassToggleCard(
+                title: "Use Siri Remote",
+                subtitle: "Use remote as NES controller",
+                icon: "appletv.fill",
+                isOn: .constant(true)
+            )
+            
+            Button(action: {}) {
+                HStack(spacing: 16) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 14)
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 48, height: 48)
+                        
+                        Image(systemName: "slider.horizontal.3")
+                            .font(.system(size: 20))
+                            .foregroundColor(Color(red: 0.95, green: 0.35, blue: 0.45))
+                    }
+                    
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Configure Button Mapping")
+                            .font(.system(size: 17, weight: .semibold))
+                            .foregroundColor(.white)
+                        
+                        Text("Customize controls for each profile")
+                            .font(.system(size: 13))
+                            .foregroundColor(.white.opacity(0.5))
+                    }
+                    
+                    Spacer()
+                    
             Image(systemName: "chevron.right")
                 .foregroundColor(.white.opacity(0.3))
+        }
+                .padding(18)
+                .background(
+                    RoundedRectangle(cornerRadius: 20)
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 20)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        )
+                )
+            }
+            .buttonStyle(.plain)
+        }
+    }
+    
+    // MARK: - Profile Settings
+    
+    private var profileSettings: some View {
+        VStack(spacing: 20) {
+            if let profile = profileManager.activeProfile {
+                // Current profile info
+                HStack(spacing: 20) {
+                    let color = ProfilePictureManager.shared.getColor(for: profile.pictureID)
+                    
+                    ZStack {
+                        Circle()
+                            .fill(.ultraThinMaterial)
+                            .frame(width: 80, height: 80)
+                        
+                        Circle()
+                            .fill(color)
+                            .frame(width: 64, height: 64)
+                        
+                        Text(String(profile.name.prefix(1)).uppercased())
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.white)
+                    }
+                    .shadow(color: color.opacity(0.4), radius: 15)
+                    
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text(profile.name)
+                            .font(.system(size: 24, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        Text("Created \(profile.createdAt.formatted(date: .abbreviated, time: .omitted))")
+                            .font(.system(size: 14))
+                            .foregroundColor(.white.opacity(0.5))
+                    }
+                    
+                    Spacer()
+                    
+                    Button("Edit Profile") {
+                        // Edit profile action
+                    }
+                    .buttonStyle(GlassPillButtonStyle())
+                }
+                .padding(24)
+                .background(
+                    RoundedRectangle(cornerRadius: 22)
+                        .fill(.ultraThinMaterial)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 22)
+                                .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                        )
+                )
+                
+                Button(action: { profileManager.activeProfile = nil }) {
+                    HStack(spacing: 14) {
+                        Image(systemName: "rectangle.portrait.and.arrow.right")
+                            .font(.system(size: 18))
+                        Text("Switch Profile")
+                            .font(.system(size: 17, weight: .semibold))
+                    }
+                    .foregroundColor(.white)
+                    .padding(.horizontal, 28)
+                    .padding(.vertical, 16)
+                    .background(
+                        Capsule()
+                            .fill(.ultraThinMaterial)
+                            .overlay(
+                                Capsule()
+                                    .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(.plain)
+                
+            } else {
+                Text("No profile selected")
+                    .font(.system(size: 18))
+                    .foregroundColor(.white.opacity(0.5))
+            }
+        }
+    }
+    
+    // MARK: - About Settings
+    
+    private var aboutSettings: some View {
+        VStack(spacing: 20) {
+            // App info
+            HStack(spacing: 20) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 22)
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 90, height: 90)
+                    
+                    Image(systemName: "gamecontroller.fill")
+                        .font(.system(size: 40))
+                        .foregroundStyle(
+                            LinearGradient(
+                                colors: [Color(red: 0.95, green: 0.35, blue: 0.45), Color(red: 0.85, green: 0.25, blue: 0.55)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                }
+                .shadow(color: Color(red: 0.95, green: 0.3, blue: 0.4).opacity(0.3), radius: 15)
+                
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("NesCaster")
+                        .font(.system(size: 28, weight: .bold))
+                        .foregroundColor(.white)
+                    
+                    Text("Version 1.0.0 (Build 1)")
+                        .font(.system(size: 15))
+                        .foregroundColor(.white.opacity(0.5))
+                    
+                    Text("Premium NES Experience")
+                        .font(.system(size: 14))
+                        .foregroundColor(.white.opacity(0.4))
+                }
+                
+                Spacer()
+            }
+            .padding(24)
+            .background(
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 22)
+                            .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                    )
+            )
+            
+            // Feature badges
+            LazyVGrid(columns: [
+                GridItem(.flexible()),
+                GridItem(.flexible()),
+                GridItem(.flexible())
+            ], spacing: 14) {
+                GlassFeatureBadge(icon: "4k.tv.fill", text: "4K")
+                GlassFeatureBadge(icon: "gauge.high", text: "120fps")
+                GlassFeatureBadge(icon: "cpu", text: "Metal")
+                GlassFeatureBadge(icon: "gamecontroller.fill", text: "MFi")
+                GlassFeatureBadge(icon: "person.3.fill", text: "Profiles")
+                GlassFeatureBadge(icon: "square.and.arrow.down.fill", text: "States")
+            }
+            
+            // Credits
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Powered By")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundColor(.white.opacity(0.5))
+                
+                Text("Mesen NES Core • Metal Graphics • AVFoundation Audio")
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.4))
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(18)
+            .background(
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(.ultraThinMaterial.opacity(0.4))
+            )
         }
     }
 }
 
-// MARK: - Settings Row
+// MARK: - Glass Component Styles
 
-struct SettingsRow<Accessory: View>: View {
+struct GlassNavigationButton: View {
     let title: String
-    let subtitle: String
     let icon: String
-    @ViewBuilder let accessory: () -> Accessory
+    let color: Color
+    let isSelected: Bool
+    let action: () -> Void
     
     @Environment(\.isFocused) var isFocused
     
     var body: some View {
-        HStack(spacing: 20) {
-            // Icon
+        Button(action: action) {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(isSelected ? color.opacity(0.3) : .clear)
+                        .frame(width: 36, height: 36)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 16, weight: .semibold))
+                        .foregroundColor(isSelected ? color : .white.opacity(0.6))
+                }
+                
+                Text(title)
+                    .font(.system(size: 16, weight: isSelected ? .semibold : .medium))
+                    .foregroundColor(isSelected ? .white : .white.opacity(0.7))
+                
+                Spacer()
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(isSelected ? Color.white.opacity(0.1) : .clear)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(isFocused ? color.opacity(0.6) : .clear, lineWidth: 2)
+                    )
+            )
+            .scaleEffect(isFocused ? 1.02 : 1.0)
+            .animation(.spring(response: 0.3), value: isFocused)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+struct GlassSettingCard<Content: View>: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    let content: () -> Content
+    
+    var body: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(spacing: 14) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.ultraThinMaterial)
+                        .frame(width: 44, height: 44)
+                    
+                    Image(systemName: icon)
+                        .font(.system(size: 18))
+                        .foregroundColor(.white.opacity(0.7))
+                }
+                
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(title)
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundColor(.white)
+                    
+                    Text(subtitle)
+                        .font(.system(size: 13))
+                        .foregroundColor(.white.opacity(0.5))
+                }
+                
+                Spacer()
+            }
+            
+            content()
+        }
+        .padding(20)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
+        )
+    }
+}
+
+struct GlassToggleCard: View {
+    let title: String
+    let subtitle: String
+    let icon: String
+    @Binding var isOn: Bool
+    
+    var body: some View {
+        HStack(spacing: 16) {
             ZStack {
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(Color.white.opacity(0.08))
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(.ultraThinMaterial)
                     .frame(width: 44, height: 44)
                 
                 Image(systemName: icon)
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundColor(.white.opacity(0.7))
+                    .font(.system(size: 18))
+                    .foregroundColor(isOn ? .green : .white.opacity(0.5))
             }
             
-            // Labels
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .font(.system(size: 20, weight: .semibold))
+                    .font(.system(size: 17, weight: .semibold))
                     .foregroundColor(.white)
                 
                 Text(subtitle)
-                    .font(.system(size: 14))
+                    .font(.system(size: 13))
                     .foregroundColor(.white.opacity(0.5))
             }
             
             Spacer()
             
-            // Accessory
-            accessory()
+            Toggle("", isOn: $isOn)
+                .labelsHidden()
+                .tint(.green)
         }
-        .padding(.horizontal, 24)
-        .padding(.vertical, 18)
+        .padding(18)
         .background(
-            isFocused ? Color.white.opacity(0.08) : Color.clear
+            RoundedRectangle(cornerRadius: 20)
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20)
+                        .stroke(Color.white.opacity(0.12), lineWidth: 1)
+                )
         )
-        .animation(.easeInOut(duration: 0.15), value: isFocused)
     }
 }
 
-// MARK: - Channel Toggle
-
-struct ChannelToggle: View {
-    let label: String
-    @Binding var isOn: Bool
+struct GlassControllerCard: View {
+    let name: String
+    let type: String
+    let status: ControllerStatus
+    
+    enum ControllerStatus {
+        case connected, disconnected
+    }
     
     var body: some View {
-        Button(action: { isOn.toggle() }) {
-            VStack(spacing: 6) {
-                Text(label)
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(isOn ? .white : .white.opacity(0.4))
+        HStack(spacing: 16) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(.ultraThinMaterial)
+                    .frame(width: 52, height: 52)
                 
-                Circle()
-                    .fill(isOn ? Color(red: 0.3, green: 0.8, blue: 0.4) : Color.white.opacity(0.2))
-                    .frame(width: 12, height: 12)
+                Image(systemName: "gamecontroller.fill")
+                    .font(.system(size: 22))
+                    .foregroundColor(status == .connected ? .green : .white.opacity(0.3))
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 8)
+            
+            VStack(alignment: .leading, spacing: 3) {
+                Text(name)
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundColor(.white)
+                
+                Text(type)
+                    .font(.system(size: 13))
+                    .foregroundColor(.white.opacity(0.5))
+            }
+            
+            Spacer()
+            
+            Circle()
+                .fill(status == .connected ? Color.green : Color.gray.opacity(0.5))
+                .frame(width: 10, height: 10)
+                .shadow(color: status == .connected ? .green : .clear, radius: 4)
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 18)
+                .fill(.ultraThinMaterial.opacity(0.7))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18)
+                        .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                )
+        )
+    }
+}
+
+struct GlassFeatureBadge: View {
+    let icon: String
+    let text: String
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 14, weight: .semibold))
+            Text(text)
+                .font(.system(size: 13, weight: .semibold))
+        }
+        .foregroundColor(.white.opacity(0.7))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            Capsule()
+                .fill(.ultraThinMaterial)
+                .overlay(
+                    Capsule()
+                        .stroke(Color.white.opacity(0.15), lineWidth: 1)
+                )
+        )
+    }
+}
+
+struct GlassPillButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.system(size: 15, weight: .semibold))
+            .foregroundColor(.white)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 10)
             .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isOn ? Color.white.opacity(0.1) : Color.clear)
+                Capsule()
+                    .fill(.ultraThinMaterial)
+                    .overlay(
+                        Capsule()
+                            .stroke(Color.white.opacity(0.2), lineWidth: 1)
+                    )
             )
-        }
-        .buttonStyle(.plain)
-    }
-}
-
-// MARK: - Controller Mapping View (Placeholder)
-
-struct ControllerMappingView: View {
-    @ObservedObject var profileManager: ProfileManager
-    @Environment(\.dismiss) var dismiss
-    
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color(red: 0.05, green: 0.05, blue: 0.1).ignoresSafeArea()
-                
-                VStack(spacing: 40) {
-                    Text("Controller Mapping")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    Text("Press a button on your controller to remap it")
-                        .foregroundColor(.white.opacity(0.6))
-                    
-                    // Controller diagram would go here
-                    Image(systemName: "gamecontroller.fill")
-                        .font(.system(size: 120))
-                        .foregroundColor(.white.opacity(0.3))
-                    
-                    Text("Coming soon...")
-                        .foregroundColor(.white.opacity(0.4))
-                }
-            }
-            .navigationTitle("Button Mapping")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
-    }
-}
-
-// MARK: - Content Transfer View (Placeholder)
-
-struct ContentTransferView: View {
-    @Environment(\.dismiss) var dismiss
-    @State private var isServerRunning = false
-    
-    var body: some View {
-        NavigationStack {
-            ZStack {
-                Color(red: 0.05, green: 0.05, blue: 0.1).ignoresSafeArea()
-                
-                VStack(spacing: 40) {
-                    Text("Content Transfer")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundColor(.white)
-                    
-                    if isServerRunning {
-                        // QR Code placeholder
-                        RoundedRectangle(cornerRadius: 16)
-                            .fill(Color.white)
-                            .frame(width: 200, height: 200)
-                            .overlay(
-                                Text("QR")
-                                    .font(.system(size: 48, weight: .bold))
-                                    .foregroundColor(.black.opacity(0.3))
-                            )
-                        
-                        Text("http://192.168.1.42:8080")
-                            .font(.system(size: 24, weight: .medium, design: .monospaced))
-                            .foregroundColor(.white)
-                        
-                        Text("Open this URL on any device connected to the same Wi-Fi network")
-                            .foregroundColor(.white.opacity(0.6))
-                            .multilineTextAlignment(.center)
-                            .padding(.horizontal, 60)
-                    } else {
-                        Image(systemName: "wifi")
-                            .font(.system(size: 80))
-                            .foregroundColor(.white.opacity(0.3))
-                        
-                        Button(action: { isServerRunning = true }) {
-                            Text("Start Transfer Server")
-                                .font(.system(size: 20, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 40)
-                                .padding(.vertical, 16)
-                                .background(
-                                    Capsule()
-                                        .fill(Color(red: 0.9, green: 0.3, blue: 0.4))
-                                )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-            }
-            .navigationTitle("Add Content")
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") { dismiss() }
-                }
-            }
-        }
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.2), value: configuration.isPressed)
     }
 }
 
 #Preview {
     SettingsView(profileManager: ProfileManager())
-        .environmentObject(AppState())
         .preferredColorScheme(.dark)
 }

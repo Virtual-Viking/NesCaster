@@ -192,6 +192,17 @@ size_t mesen_save_state_to_buffer(uint8_t* buffer, size_t bufferSize);
 /// @return true on success
 bool mesen_load_state_from_buffer(const uint8_t* buffer, size_t size);
 
+/// Create save state and return allocated buffer
+/// @param outSize Pointer to receive size of state data
+/// @return Newly allocated buffer with state data (caller must free), or NULL on error
+uint8_t* mesen_create_save_state(int32_t* outSize);
+
+/// Load state from data buffer
+/// @param data State data
+/// @param size Size of state data  
+/// @return true on success
+bool mesen_load_save_state(const uint8_t* data, int32_t size);
+
 // MARK: - Quick Save/Load (for run-ahead)
 
 /// Quick save state (fast, no allocation)
