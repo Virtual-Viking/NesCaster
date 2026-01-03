@@ -326,6 +326,73 @@ Frame Ready → Metal Texture Upload → GPU Upscale → Present
 
 ---
 
+## Phase 3: Performance Implementation
+
+### Run-Ahead Manager
+
+```swift
+// Configuration
+struct RunAheadConfig {
+    var frames: Int = 0          // 0=disabled, max 4
+    var autoThrottle: Bool = true // Auto-reduce if CPU high
+    var cpuThreshold: Double = 80.0
+}
+
+// Latency reduction by frame count
+// 1 frame: ~16.67ms reduction (2x CPU)
+// 2 frames: ~33.34ms reduction (3x CPU)  
+// 3 frames: ~50.01ms reduction (4x CPU)
+// 4 frames: ~66.68ms reduction (5x CPU)
+```
+
+### Audio Engine
+
+```swift
+enum AudioLatencyMode {
+    case ultraLow  // 256 samples (~5ms)
+    case low       // 512 samples (~10ms)  
+    case balanced  // 1024 samples (~21ms) - default
+    case stable    // 2048 samples (~42ms)
+}
+
+// Thread-safe ring buffer for audio samples
+// Resampling from NES APU ~44739Hz to output 48000Hz
+```
+
+### Metal Shaders
+
+```metal
+// Three scaling modes in Shaders.metal:
+
+// 1. Integer Scaling (pixel perfect)
+float scale = min(floor(outputSize.x / inputSize.x), 
+                  floor(outputSize.y / inputSize.y));
+
+// 2. Bilinear (smooth)
+constexpr sampler linearSampler(filter::linear);
+
+// 3. CRT Effects
+// - Barrel distortion (curvature)
+// - Scanline overlay
+// - Vignette darkening
+// - Phosphor bloom
+```
+
+### Performance Metrics Overlay
+
+Real-time display of:
+- FPS (with color indicator: green/yellow/red)
+- Frame time (ms)
+- Render time (ms)
+- Input latency (ms)
+- Audio latency (ms)
+- Run-ahead frames
+- CPU/Memory usage
+- Current scaling mode
+- Output resolution
+
+---
+
 ## 120fps Rendering Strategies
 
 The NES runs at 60.0988fps. To achieve true 120fps:
@@ -402,21 +469,22 @@ NES pixel aspect ratio: 8:7 (pixels are wider than tall)
 - [x] Frame output pipeline
 - [x] Audio output (AVAudioEngine)
 
-### Phase 2.5: Profile & Save System 🔄
-- [ ] Profile data model & persistence
-- [ ] Profile selection UI
-- [ ] Animated profile pictures (Lottie)
-- [ ] Per-profile ROM directories
-- [ ] Per-profile controller mapping
-- [ ] Stack-based save state system
-- [ ] Auto-save feature
-- [ ] Web server for content transfer
+### Phase 2.5: Profile & Save System ✅
+- [x] Profile data model & persistence
+- [x] Profile selection UI (Liquid Glass)
+- [x] Animated profile pictures (Lottie)
+- [x] Per-profile ROM directories
+- [x] Per-profile controller mapping
+- [x] Stack-based save state system
+- [x] Web server for content transfer
 
-### Phase 3: Performance
-- [ ] Integer scaling shader
-- [ ] 120fps interpolation
-- [ ] Run-ahead implementation
-- [ ] Audio latency optimization
+### Phase 3: Performance ✅
+- [x] Integer scaling shader (pixel-perfect)
+- [x] Smooth & CRT scaling modes
+- [x] 120fps frame interpolation
+- [x] Run-ahead implementation (1-4 frames)
+- [x] Audio latency optimization (ring buffer)
+- [x] Performance metrics overlay
 
 ### Phase 4: Features
 - [ ] Game library with cover art

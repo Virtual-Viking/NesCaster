@@ -54,7 +54,7 @@ class GameControllerManager: ObservableObject {
             .sink { [weak self] notification in
                 if let controller = notification.object as? GCController {
                     Task { @MainActor in
-                        self?.controllerConnected(controller)
+                    self?.controllerConnected(controller)
                     }
                 }
             }
@@ -66,7 +66,7 @@ class GameControllerManager: ObservableObject {
             .sink { [weak self] notification in
                 if let controller = notification.object as? GCController {
                     Task { @MainActor in
-                        self?.controllerDisconnected(controller)
+                    self?.controllerDisconnected(controller)
                     }
                 }
             }
@@ -77,7 +77,7 @@ class GameControllerManager: ObservableObject {
         GCController.startWirelessControllerDiscovery { [weak self] in
             print("🎮 Controller discovery completed")
             Task { @MainActor in
-                self?.updateConnectedControllers()
+            self?.updateConnectedControllers()
             }
         }
     }
@@ -133,53 +133,53 @@ class GameControllerManager: ObservableObject {
         // D-Pad
         gamepad.dpad.valueChangedHandler = { [weak self] _, xValue, yValue in
             Task { @MainActor in
-                self?.updateDPad(x: xValue, y: yValue, controller: controllerIndex)
+            self?.updateDPad(x: xValue, y: yValue, controller: controllerIndex)
             }
         }
         
         // Left Thumbstick (alternative to D-Pad)
         gamepad.leftThumbstick.valueChangedHandler = { [weak self] _, xValue, yValue in
             Task { @MainActor in
-                self?.updateDPad(x: xValue, y: yValue, controller: controllerIndex)
+            self?.updateDPad(x: xValue, y: yValue, controller: controllerIndex)
             }
         }
         
         // A Button (NES A)
         gamepad.buttonA.valueChangedHandler = { [weak self] _, _, pressed in
             Task { @MainActor in
-                self?.updateButton(.a, pressed: pressed, controller: controllerIndex)
+            self?.updateButton(.a, pressed: pressed, controller: controllerIndex)
             }
         }
         
         // B Button / X Button (NES B)
         gamepad.buttonB.valueChangedHandler = { [weak self] _, _, pressed in
             Task { @MainActor in
-                self?.updateButton(.b, pressed: pressed, controller: controllerIndex)
+            self?.updateButton(.b, pressed: pressed, controller: controllerIndex)
             }
         }
         gamepad.buttonX.valueChangedHandler = { [weak self] _, _, pressed in
             Task { @MainActor in
-                self?.updateButton(.b, pressed: pressed, controller: controllerIndex)
+            self?.updateButton(.b, pressed: pressed, controller: controllerIndex)
             }
         }
         
         // Y Button (Alternative NES A - turbo)
         gamepad.buttonY.valueChangedHandler = { [weak self] _, _, pressed in
             Task { @MainActor in
-                self?.updateButton(.a, pressed: pressed, controller: controllerIndex)
+            self?.updateButton(.a, pressed: pressed, controller: controllerIndex)
             }
         }
         
         // Shoulder buttons for Select/Start
         gamepad.leftShoulder.valueChangedHandler = { [weak self] _, _, pressed in
             Task { @MainActor in
-                self?.updateButton(.select, pressed: pressed, controller: controllerIndex)
+            self?.updateButton(.select, pressed: pressed, controller: controllerIndex)
             }
         }
         
         gamepad.rightShoulder.valueChangedHandler = { [weak self] _, _, pressed in
             Task { @MainActor in
-                self?.updateButton(.start, pressed: pressed, controller: controllerIndex)
+            self?.updateButton(.start, pressed: pressed, controller: controllerIndex)
             }
         }
         
@@ -187,7 +187,7 @@ class GameControllerManager: ObservableObject {
         gamepad.buttonMenu.valueChangedHandler = { [weak self] _, _, pressed in
             if pressed {
                 Task { @MainActor in
-                    self?.onMenuButtonPressed?()
+                self?.onMenuButtonPressed?()
                 }
             }
         }
@@ -200,21 +200,21 @@ class GameControllerManager: ObservableObject {
         // Touch surface as D-Pad
         microGamepad.dpad.valueChangedHandler = { [weak self] _, xValue, yValue in
             Task { @MainActor in
-                self?.updateDPad(x: xValue, y: yValue, controller: 1)
+            self?.updateDPad(x: xValue, y: yValue, controller: 1)
             }
         }
         
         // Play/Pause button (NES Start)
         microGamepad.buttonA.valueChangedHandler = { [weak self] _, _, pressed in
             Task { @MainActor in
-                self?.updateButton(.a, pressed: pressed, controller: 1)
+            self?.updateButton(.a, pressed: pressed, controller: 1)
             }
         }
         
         // Select button (NES Select)
         microGamepad.buttonX.valueChangedHandler = { [weak self] _, _, pressed in
             Task { @MainActor in
-                self?.updateButton(.b, pressed: pressed, controller: 1)
+            self?.updateButton(.b, pressed: pressed, controller: 1)
             }
         }
         
@@ -222,7 +222,7 @@ class GameControllerManager: ObservableObject {
         microGamepad.buttonMenu.valueChangedHandler = { [weak self] _, _, pressed in
             if pressed {
                 Task { @MainActor in
-                    self?.onMenuButtonPressed?()
+                self?.onMenuButtonPressed?()
                 }
             }
         }

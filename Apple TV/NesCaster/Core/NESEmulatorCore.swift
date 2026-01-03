@@ -164,7 +164,7 @@ class NESEmulatorCore: ObservableObject {
         case MesenLoadResult_Success:
             currentROM = nil
             romName = name
-            state = .paused
+        state = .paused
             print("✅ ROM loaded from data: \(name)")
             
         case MesenLoadResult_InvalidROM:
@@ -310,7 +310,7 @@ class NESEmulatorCore: ObservableObject {
             }
             
             // Update performance metrics
-            await MainActor.run {
+        await MainActor.run {
                 self.updatePerformanceMetrics(frameDuration: elapsed)
             }
         }

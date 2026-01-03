@@ -310,7 +310,7 @@ struct PauseMenuButton: View {
 
 struct NESMetalView: UIViewRepresentable {
     let emulatorCore: NESEmulatorCore
-    
+
     func makeCoordinator() -> Coordinator {
         Coordinator(emulatorCore: emulatorCore)
     }
@@ -344,7 +344,7 @@ struct NESMetalView: UIViewRepresentable {
             Task { @MainActor in
                 emulatorCore.onFrameReady = { buffer in
                     renderer.updateFrame(pixelData: buffer)
-                }
+        }
             }
         }
         

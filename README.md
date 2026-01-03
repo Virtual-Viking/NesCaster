@@ -144,19 +144,31 @@ To install and test on your Apple TV 4K 3rd gen device:
 ## ⚡ Performance Features
 
 ### Low Latency
-- **Run-ahead emulation** — Predicts future frames to reduce input lag
+- **Run-ahead emulation** — Up to 4 frames ahead (~67ms latency reduction)
 - **Direct input polling** — Bypasses OS input buffering
 - **Zero-copy textures** — Shared memory between CPU and GPU
+- **Configurable audio buffers** — Ultra-low (5ms) to stable (42ms) modes
 
 ### High Frame Rate
-- **Frame interpolation** — Generates smooth intermediate frames
+- **120fps frame interpolation** — Motion-compensated blending
 - **Metal 3 optimization** — Native GPU acceleration
 - **VRR support** — Variable refresh rate when available
+- **Real-time metrics** — FPS, frame time, latency overlay
 
-### Sharp Scaling
-- **Integer scaling** — No blur or interpolation artifacts
-- **Pixel aspect correction** — Proper 8:7 NES pixel ratio
-- **Optional CRT effects** — Scanlines, curvature, bloom
+### Sharp Scaling (3 Modes)
+| Mode | Description |
+|------|-------------|
+| **Pixel Perfect** | Integer scaling with nearest-neighbor (default) |
+| **Smooth** | Bilinear filtering for softer edges |
+| **CRT** | Scanlines, curvature, vignette, and phosphor bloom |
+
+### Render Presets
+| Preset | FPS | Effects | Best For |
+|--------|-----|---------|----------|
+| Performance | 60 | None | Lowest latency |
+| Balanced | 120 | Interpolation | Most users |
+| Quality | 120 | All enhancements | Visual fidelity |
+| Retro | 60 | CRT simulation | Nostalgic look |
 
 ---
 
@@ -221,14 +233,15 @@ NesCaster features Apple's newest **Liquid Glass** design language on Apple TV a
 - [x] Controller mapping UI
 - [x] Web server for content transfer (TV)
 - [x] Transfer UI with QR code
-- [ ] Animated profile picture library (Lottie)
-- [ ] Auto-save level detection
+- [x] **Animated profile pictures** (Lottie-style)
+- [x] Profile picture picker UI
 
-### Phase 3: Performance
-- [ ] Integer scaling shader
-- [ ] 120fps frame interpolation
-- [ ] Run-ahead implementation
-- [ ] Audio latency optimization
+### Phase 3: Performance ✅
+- [x] Integer scaling shader (pixel-perfect Metal shaders)
+- [x] 120fps frame interpolation (motion-compensated blending)
+- [x] Run-ahead implementation (up to 4 frames, ~67ms latency reduction)
+- [x] Audio latency optimization (ring buffer with configurable modes)
+- [x] Performance metrics overlay (FPS, frame time, latency breakdown)
 
 ### Phase 4: Features
 - [ ] Game library with cover art

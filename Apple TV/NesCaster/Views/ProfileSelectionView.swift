@@ -233,6 +233,10 @@ struct GlassProfileCard: View {
         pictureManager.getColor(for: profile.pictureID)
     }
     
+    private var isAnimated: Bool {
+        pictureManager.isAnimated(profile.pictureID)
+    }
+    
     var body: some View {
         Button(action: onSelect) {
             VStack(spacing: 20) {
@@ -260,29 +264,41 @@ struct GlassProfileCard: View {
                             radius: 30
                         )
                     
-                    // Inner colored circle
-                    Circle()
-                        .fill(
-                            LinearGradient(
-                                colors: [
-                                    profileColor.opacity(0.9),
-                                    profileColor.opacity(0.5)
-                                ],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                    // Inner avatar (animated or static)
+                    if isAnimated && !isManageMode {
+                        // Lottie animated avatar
+                        LottieView(animationName: profile.pictureID)
+                            .frame(width: 150, height: 150)
+                            .clipShape(Circle())
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
                             )
-                        )
-                        .frame(width: 150, height: 150)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.white.opacity(0.3), lineWidth: 1)
-                        )
-                    
-                    // Initial letter
-                    Text(String(profile.name.prefix(1)).uppercased())
-                        .font(.system(size: 64, weight: .bold, design: .rounded))
-                        .foregroundColor(.white)
-                        .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+                    } else {
+                        // Static colored circle with initial
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [
+                                        profileColor.opacity(0.9),
+                                        profileColor.opacity(0.5)
+                                    ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 150, height: 150)
+                            .overlay(
+                                Circle()
+                                    .stroke(Color.white.opacity(0.3), lineWidth: 1)
+                            )
+                        
+                        // Initial letter (only for static avatars)
+                        Text(String(profile.name.prefix(1)).uppercased())
+                            .font(.system(size: 64, weight: .bold, design: .rounded))
+                            .foregroundColor(.white)
+                            .shadow(color: .black.opacity(0.3), radius: 4, y: 2)
+                    }
                     
                     // Edit indicator overlay
                     if isManageMode {

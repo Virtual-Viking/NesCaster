@@ -31,6 +31,10 @@
 		022 /* ControllerMappingView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 125 /* ControllerMappingView.swift */; };
 		023 /* ContentTransferServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 126 /* ContentTransferServer.swift */; };
 		024 /* TransferView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 127 /* TransferView.swift */; };
+		025 /* LottieView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 128 /* LottieView.swift */; };
+		026 /* ProfilePicturePickerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 129 /* ProfilePicturePickerView.swift */; };
+		027 /* RunAheadManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 130 /* RunAheadManager.swift */; };
+		028 /* PerformanceOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 131 /* PerformanceOverlayView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -62,6 +66,10 @@
 		125 /* ControllerMappingView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ControllerMappingView.swift; sourceTree = "<group>"; };
 		126 /* ContentTransferServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentTransferServer.swift; sourceTree = "<group>"; };
 		127 /* TransferView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TransferView.swift; sourceTree = "<group>"; };
+		128 /* LottieView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LottieView.swift; sourceTree = "<group>"; };
+		129 /* ProfilePicturePickerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProfilePicturePickerView.swift; sourceTree = "<group>"; };
+		130 /* RunAheadManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RunAheadManager.swift; sourceTree = "<group>"; };
+		131 /* PerformanceOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PerformanceOverlayView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -91,6 +99,7 @@
 				113 /* NesCaster-Bridging-Header.h */,
 				303 /* Views */,
 				304 /* Core */,
+				310 /* Audio */,
 				307 /* Profiles */,
 				308 /* SaveStates */,
 				309 /* WebServer */,
@@ -118,6 +127,9 @@
 				120 /* ProfileSelectionView.swift */,
 				125 /* ControllerMappingView.swift */,
 				127 /* TransferView.swift */,
+				128 /* LottieView.swift */,
+				129 /* ProfilePicturePickerView.swift */,
+				131 /* PerformanceOverlayView.swift */,
 			);
 			path = Views;
 			sourceTree = "<group>";
@@ -127,12 +139,20 @@
 			children = (
 				108 /* NESEmulatorCore.swift */,
 				109 /* GameControllerManager.swift */,
-				116 /* AudioEngine.swift */,
 				124 /* ControllerMappingManager.swift */,
+				130 /* RunAheadManager.swift */,
 				111 /* MesenBridge.h */,
 				112 /* MesenBridge.mm */,
 			);
 			path = Core;
+			sourceTree = "<group>";
+		};
+		310 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				116 /* AudioEngine.swift */,
+			);
+			path = Audio;
 			sourceTree = "<group>";
 		};
 		305 /* Rendering */ = {
@@ -274,6 +294,10 @@
 				022 /* ControllerMappingView.swift in Sources */,
 				023 /* ContentTransferServer.swift in Sources */,
 				024 /* TransferView.swift in Sources */,
+				025 /* LottieView.swift in Sources */,
+				026 /* ProfilePicturePickerView.swift in Sources */,
+				027 /* RunAheadManager.swift in Sources */,
+				028 /* PerformanceOverlayView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

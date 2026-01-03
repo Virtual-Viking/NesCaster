@@ -70,15 +70,15 @@ struct ContentView: View {
             // Animated orb 2 - Blue
             Circle()
                 .fill(
-                    RadialGradient(
-                        colors: [
+            RadialGradient(
+                colors: [
                             Color(red: 0.2, green: 0.4, blue: 0.9).opacity(0.25),
-                            Color.clear
-                        ],
+                    Color.clear
+                ],
                         center: .center,
                         startRadius: 0,
                         endRadius: 350
-                    )
+            )
                 )
                 .frame(width: 700, height: 700)
                 .blur(radius: 80)
@@ -87,15 +87,15 @@ struct ContentView: View {
             // Subtle purple accent
             Circle()
                 .fill(
-                    RadialGradient(
-                        colors: [
+            RadialGradient(
+                colors: [
                             Color(red: 0.5, green: 0.2, blue: 0.7).opacity(0.2),
-                            Color.clear
-                        ],
+                    Color.clear
+                ],
                         center: .center,
                         startRadius: 0,
                         endRadius: 250
-                    )
+            )
                 )
                 .frame(width: 500, height: 500)
                 .blur(radius: 60)
@@ -152,18 +152,18 @@ struct ContentView: View {
                             )
                     )
                 
-                Image(systemName: "gamecontroller.fill")
+            Image(systemName: "gamecontroller.fill")
                     .font(.system(size: 40, weight: .medium))
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [
                                 Color(red: 0.95, green: 0.35, blue: 0.45),
                                 Color(red: 0.85, green: 0.25, blue: 0.55)
-                            ],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
                     )
+                )
             }
             .shadow(color: Color(red: 0.95, green: 0.3, blue: 0.4).opacity(0.3), radius: 20)
             
@@ -184,9 +184,9 @@ struct ContentView: View {
                         .font(.system(size: 16, weight: .medium))
                         .foregroundColor(.white.opacity(0.5))
                 } else {
-                    Text("Premium NES Experience")
+                Text("Premium NES Experience")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundColor(.white.opacity(0.5))
+                    .foregroundColor(.white.opacity(0.5))
                 }
             }
             
@@ -364,12 +364,12 @@ struct GlassTabButton: View {
                                 endPoint: .bottomTrailing
                             ))
                             : AnyShapeStyle(Color.clear)
-                    )
-                    .overlay(
-                        Capsule()
-                            .stroke(
-                                isSelected ? Color.white.opacity(0.3) : Color.clear,
-                                lineWidth: 1
+            )
+            .overlay(
+                Capsule()
+                    .stroke(
+                        isSelected ? Color.white.opacity(0.3) : Color.clear,
+                        lineWidth: 1
                             )
                     )
             )
