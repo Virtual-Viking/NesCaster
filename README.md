@@ -7,7 +7,41 @@ A high-performance Nintendo Entertainment System emulator designed for Apple TV,
 - ⚡ **Sub-frame latency** — Faster response than original hardware
 - 🖥️ **4K crisp graphics** — Pixel-perfect integer scaling
 - 🎬 **True 120fps** — Smooth motion without frame doubling
+- 👥 **Multi-profile support** — Netflix-style profile switching
 - 🎨 **Beautiful UI** — Modern, elegant interface
+
+---
+
+## ✨ Key Features
+
+### 👥 Profile System (Netflix-Style)
+- **Up to 4 profiles** per device
+- Each profile has isolated:
+  - ROM/game collection
+  - Settings & preferences
+  - Controller mappings
+  - Save states & history
+- **Animated profile pictures** from built-in library
+- **Easy content transfer** via web interface (TV) or file browser (iPad/Android)
+
+### 💾 Smart Save States
+- **History-based saves** — Never lose progress again!
+- Configurable history size (5, 10, or 15 slots)
+- **Instant save** — One button press
+- **Visual load picker** — See recent saves with timestamps
+- **Auto-save** after level completion
+- Oldest saves automatically pruned
+
+### 🎮 Per-Profile Controller Support
+- Remember paired controllers per profile
+- Custom button remapping saved per profile
+- Support for all major controllers
+
+### 📲 Easy Content Transfer
+| Platform | Method |
+|----------|--------|
+| Apple TV / Android TV | Web interface (scan QR code on same network) |
+| iPad / Android Tablet | Native file browser |
 
 ---
 
@@ -15,12 +49,21 @@ A high-performance Nintendo Entertainment System emulator designed for Apple TV,
 
 ```
 NesCaster/
-├── Android/          # Android app (Kotlin + Jetpack Compose)
-├── iPad/             # iOS/iPadOS app (SwiftUI)
-├── Apple TV/         # tvOS app (SwiftUI + Metal) — Primary target
-├── Research/         # Technical documentation
-└── Shared/           # Cross-platform code
-    └── mesen/        # Mesen2 NES emulator core
+├── Android/              # Android app (Kotlin + Jetpack Compose)
+├── iPad/                 # iOS/iPadOS app (SwiftUI)
+├── Apple TV/             # tvOS app (SwiftUI + Metal) — Primary target
+│   └── NesCaster/
+│       ├── Core/         # Emulator core & bridges
+│       ├── Views/        # SwiftUI views
+│       ├── Rendering/    # Metal renderer & shaders
+│       ├── Profiles/     # Profile management
+│       ├── SaveStates/   # Save state system
+│       ├── WebServer/    # Content transfer server
+│       └── Resources/    # Assets & profile pictures
+├── Research/             # Technical documentation
+└── Shared/               # Cross-platform code
+    ├── mesen/            # Mesen2 NES emulator core
+    └── ProfilePictures/  # Animated SVG/Lottie library
 ```
 
 ---
@@ -50,28 +93,37 @@ NesCaster/
    - Select "Apple TV 4K" simulator
    - Press ⌘R to build and run
 
-### Device Testing
-
-1. Enable Developer Mode on Apple TV
-2. Pair Apple TV in Xcode (Window → Devices and Simulators)
-3. Select your Apple TV as the run destination
-4. Build and run (⌘R)
-
 ---
 
 ## 🏗️ Architecture
 
 ```
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  SwiftUI    │────▶│  Mesen      │────▶│   Metal     │
-│  Interface  │     │  NES Core   │     │  Renderer   │
-└─────────────┘     └─────────────┘     └─────────────┘
-       │                   │                   │
-       ▼                   ▼                   ▼
-┌─────────────┐     ┌─────────────┐     ┌─────────────┐
-│  Game       │     │  Frame      │     │  4K Output  │
-│  Controller │     │  Buffer     │     │  @ 120fps   │
-└─────────────┘     └─────────────┘     └─────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                      Profile Selection                           │
+│              (Netflix-style animated avatars)                    │
+└─────────────────────────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────┐
+│                      SwiftUI Interface                           │
+│  ┌──────────┐  ┌──────────────┐  ┌────────────┐  ┌───────────┐  │
+│  │ Library  │  │   Emulator   │  │  Settings  │  │  Transfer │  │
+│  │   View   │  │     View     │  │    View    │  │    View   │  │
+│  └──────────┘  └──────────────┘  └────────────┘  └───────────┘  │
+└─────────────────────────────────────────────────────────────────┘
+         │                │               │               │
+         ▼                ▼               ▼               ▼
+┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐
+│  Profile    │  │  Emulator   │  │  Controller │  │    Web      │
+│  Manager    │  │    Core     │  │   Manager   │  │   Server    │
+└─────────────┘  └─────────────┘  └─────────────┘  └─────────────┘
+         │                │               │
+         └────────────────┼───────────────┘
+                          ▼
+              ┌─────────────────────┐
+              │   SaveState Manager │
+              │   (Stack + History) │
+              └─────────────────────┘
 ```
 
 ---
@@ -100,7 +152,7 @@ NesCaster/
 | Controller | Support |
 |------------|---------|
 | Siri Remote | ✅ Touch surface + buttons |
-| PlayStation 5 DualSense | ✅ Full support |
+| PlayStation 5 DualSense | ✅ Full support + haptics |
 | Xbox Series X Controller | ✅ Full support |
 | MFi Controllers | ✅ Full support |
 | 8BitDo Controllers | ✅ Bluetooth connection |
@@ -115,25 +167,36 @@ NesCaster/
 - [x] Metal rendering pipeline
 - [x] Controller input system
 - [x] Asset catalog configuration
+- [x] Centralized icon management
 
-### Phase 2: Core Integration 🔄 (In Progress)
-- [ ] Compile Mesen core for tvOS
-- [ ] Create C bridge interface
-- [ ] ROM loading
-- [ ] Basic frame output
-- [ ] Audio output
+### Phase 2: Core Integration ✅
+- [x] C/Objective-C++ bridge interface
+- [x] NESEmulatorCore to MesenBridge connection
+- [x] Frame buffer → Metal renderer pipeline
+- [x] Controller input wiring
+- [x] Demo mode (animated test patterns)
+- [x] Audio output with AVAudioEngine
+- [ ] Compile actual Mesen core for tvOS
+
+### Phase 2.5: Profile & Save System 🔄 (Current)
+- [ ] Profile data model & persistence
+- [ ] Netflix-style profile selection UI
+- [ ] Animated profile picture library
+- [ ] Web server for content transfer (TV)
+- [ ] Per-profile controller pairing & remapping
+- [ ] Stack-based save state history
+- [ ] Auto-save after level detection
 
 ### Phase 3: Performance
 - [ ] Integer scaling shader
-- [ ] 120fps interpolation
+- [ ] 120fps frame interpolation
 - [ ] Run-ahead implementation
 - [ ] Audio latency optimization
 
 ### Phase 4: Features
-- [ ] Save states
 - [ ] Game library with cover art
 - [ ] Settings persistence
-- [ ] Cloud sync
+- [ ] Cloud sync across devices
 
 ### Phase 5: Polish & Expansion
 - [ ] UI animations and transitions
@@ -144,6 +207,17 @@ NesCaster/
 ---
 
 ## 🔧 Development
+
+### Adding Profile Pictures
+
+Drop animated (Lottie JSON) or static (SVG/PNG) images into:
+```
+Shared/ProfilePictures/
+├── Animated/     # Lottie JSON files
+└── Static/       # SVG or PNG files
+```
+
+The app automatically discovers and lists them in the profile picture picker.
 
 ### Building Mesen Core
 
@@ -170,4 +244,4 @@ This project uses the Mesen emulator core which is licensed under GPL-3.0.
 
 - [Mesen](https://github.com/SourMesen/Mesen2) — High-accuracy NES/SNES/GB emulator
 - [NESDev Wiki](https://www.nesdev.org/) — NES technical documentation
-
+- [Lottie](https://airbnb.io/lottie/) — Animation library for profile pictures

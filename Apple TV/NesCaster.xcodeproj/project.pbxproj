@@ -18,6 +18,8 @@
 		009 /* GameControllerManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 109 /* GameControllerManager.swift */; };
 		010 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 110 /* Shaders.metal */; };
 		011 /* MesenBridge.mm in Sources */ = {isa = PBXBuildFile; fileRef = 112 /* MesenBridge.mm */; };
+		012 /* AppIcons.swift in Sources */ = {isa = PBXBuildFile; fileRef = 114 /* AppIcons.swift */; };
+		013 /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 116 /* AudioEngine.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -35,6 +37,9 @@
 		111 /* MesenBridge.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = MesenBridge.h; sourceTree = "<group>"; };
 		112 /* MesenBridge.mm */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.objcpp; path = MesenBridge.mm; sourceTree = "<group>"; };
 		113 /* NesCaster-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = "NesCaster-Bridging-Header.h"; sourceTree = "<group>"; };
+		114 /* AppIcons.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppIcons.swift; sourceTree = "<group>"; };
+		115 /* ICONS_REFERENCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = ICONS_REFERENCE.md; sourceTree = "<group>"; };
+		116 /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -65,6 +70,7 @@
 				303 /* Views */,
 				304 /* Core */,
 				305 /* Rendering */,
+				306 /* Resources */,
 				103 /* Assets.xcassets */,
 			);
 			path = NesCaster;
@@ -93,6 +99,7 @@
 			children = (
 				108 /* NESEmulatorCore.swift */,
 				109 /* GameControllerManager.swift */,
+				116 /* AudioEngine.swift */,
 				111 /* MesenBridge.h */,
 				112 /* MesenBridge.mm */,
 			);
@@ -106,6 +113,15 @@
 				110 /* Shaders.metal */,
 			);
 			path = Rendering;
+			sourceTree = "<group>";
+		};
+		306 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				114 /* AppIcons.swift */,
+				115 /* ICONS_REFERENCE.md */,
+			);
+			path = Resources;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -188,6 +204,8 @@
 				009 /* GameControllerManager.swift in Sources */,
 				010 /* Shaders.metal in Sources */,
 				011 /* MesenBridge.mm in Sources */,
+				012 /* AppIcons.swift in Sources */,
+				013 /* AudioEngine.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -321,9 +339,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 2J48TASZ37;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -335,6 +354,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nescaster.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "NesCaster/NesCaster-Bridging-Header.h";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
@@ -349,9 +369,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "App Icon & Top Shelf Image";
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CLANG_ENABLE_MODULES = YES;
+				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = "";
+				DEVELOPMENT_TEAM = 2J48TASZ37;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -363,6 +384,7 @@
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.nescaster.app;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_OBJC_BRIDGING_HEADER = "NesCaster/NesCaster-Bridging-Header.h";
 				SWIFT_VERSION = 5.0;

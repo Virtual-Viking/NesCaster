@@ -7,7 +7,8 @@ NesCaster is a high-performance NES emulator targeting modern platforms (Apple T
 - **Sub-frame latency** (< original NES hardware ~16.6ms)
 - **True 120fps rendering** (not frame doubling)
 - **4K crisp output** (integer scaling, pixel-perfect)
-- **SDR only** (no HDR for minimal processing overhead)
+- **Multi-profile support** (Netflix-style user switching)
+- **Smart save states** (history-based, never lose progress)
 - **Modern, beautiful UI**
 
 ---
@@ -15,48 +16,221 @@ NesCaster is a high-performance NES emulator targeting modern platforms (Apple T
 ## Core Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         NesCaster Architecture                       │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌────────────────┐                                                  │
-│  │  Platform UI   │  SwiftUI (tvOS/iOS) / Jetpack Compose (Android) │
-│  └───────┬────────┘                                                  │
-│          │                                                           │
-│          ▼                                                           │
-│  ┌────────────────┐                                                  │
-│  │  Game Library  │  ROM management, metadata, cover art            │
-│  │  & Settings    │                                                  │
-│  └───────┬────────┘                                                  │
-│          │                                                           │
-│          ▼                                                           │
-│  ┌────────────────┐     ┌────────────────┐     ┌────────────────┐   │
-│  │  Input Manager │────▶│  Mesen Core    │────▶│  Frame Buffer  │   │
-│  │  (Controllers) │     │  (C++ NES)     │     │  (256×240)     │   │
-│  └────────────────┘     └────────────────┘     └───────┬────────┘   │
-│                                │                        │            │
-│                                ▼                        ▼            │
-│                         ┌────────────────┐     ┌────────────────┐   │
-│                         │  Audio Engine  │     │  Metal/Vulkan  │   │
-│                         │  (Low Latency) │     │  Renderer      │   │
-│                         └────────────────┘     └───────┬────────┘   │
-│                                                         │            │
-│                                                         ▼            │
-│                                                 ┌────────────────┐   │
-│                                                 │  Display Output│   │
-│                                                 │  4K @ 120fps   │   │
-│                                                 └────────────────┘   │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           NesCaster Architecture                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│                                                                              │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                      Profile Selection Layer                         │    │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐            │    │
+│  │  │ Profile 1│  │ Profile 2│  │ Profile 3│  │ Profile 4│            │    │
+│  │  │ (Active) │  │          │  │          │  │   Add    │            │    │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘            │    │
+│  └────────────────────────────────┬────────────────────────────────────┘    │
+│                                   │                                          │
+│                                   ▼                                          │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                         Platform UI Layer                            │    │
+│  │  SwiftUI (tvOS/iOS) / Jetpack Compose (Android)                     │    │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐            │    │
+│  │  │ Library  │  │ Emulator │  │ Settings │  │ Transfer │            │    │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────┘            │    │
+│  └────────────────────────────────┬────────────────────────────────────┘    │
+│                                   │                                          │
+│         ┌─────────────────────────┼─────────────────────────┐               │
+│         │                         │                         │               │
+│         ▼                         ▼                         ▼               │
+│  ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐         │
+│  │ Profile Manager │    │   Input Manager │    │   Web Server    │         │
+│  │  - Data Model   │    │  - Controllers  │    │ - File Transfer │         │
+│  │  - Persistence  │    │  - Per-profile  │    │ - QR Code       │         │
+│  │  - Pictures     │    │    mapping      │    │   (TV only)     │         │
+│  └────────┬────────┘    └────────┬────────┘    └─────────────────┘         │
+│           │                      │                                          │
+│           │                      ▼                                          │
+│           │             ┌─────────────────┐                                 │
+│           │             │   Mesen Core    │                                 │
+│           │             │   (C++ NES)     │                                 │
+│           │             └────────┬────────┘                                 │
+│           │                      │                                          │
+│           │         ┌────────────┼────────────┐                            │
+│           │         │            │            │                            │
+│           │         ▼            ▼            ▼                            │
+│           │  ┌───────────┐ ┌───────────┐ ┌───────────┐                    │
+│           │  │  Frame    │ │  Audio    │ │  Save     │                    │
+│           │  │  Buffer   │ │  Engine   │ │  State    │                    │
+│           │  │ (256×240) │ │           │ │  Manager  │◀───────────────────│
+│           │  └─────┬─────┘ └───────────┘ └───────────┘                    │
+│           │        │                                                       │
+│           │        ▼                                                       │
+│           │  ┌─────────────────┐                                          │
+│           │  │  Metal/Vulkan   │                                          │
+│           │  │  Renderer       │                                          │
+│           │  │  4K @ 120fps    │                                          │
+│           │  └─────────────────┘                                          │
+│           │                                                                │
+└───────────┴────────────────────────────────────────────────────────────────┘
 ```
+
+---
+
+## Profile System Architecture
+
+### Data Model
+
+```swift
+struct Profile: Identifiable, Codable {
+    let id: UUID
+    var name: String
+    var pictureID: String
+    var createdAt: Date
+    var lastUsedAt: Date
+}
+
+// Each profile has isolated directories:
+// ~/Profiles/{id}/ROMs/
+// ~/Profiles/{id}/Saves/
+// ~/Profiles/{id}/settings.json
+// ~/Profiles/{id}/controller.json
+```
+
+### Profile Picture System
+
+```
+Shared/ProfilePictures/
+├── Animated/           # Lottie JSON animations
+│   ├── mario.json
+│   └── link.json
+├── Static/             # PNG/SVG images
+│   └── controller.png
+└── manifest.json       # Picture metadata
+```
+
+Pictures are discovered at runtime from the manifest file.
+
+### Per-Profile Controller Mapping
+
+```swift
+struct ControllerMapping: Codable {
+    var profileID: UUID
+    var controllerID: String
+    
+    // NES button → Physical button
+    var buttonA: ControllerButton
+    var buttonB: ControllerButton
+    var buttonStart: ControllerButton
+    var buttonSelect: ControllerButton
+    var dpadUp: ControllerButton
+    var dpadDown: ControllerButton
+    var dpadLeft: ControllerButton
+    var dpadRight: ControllerButton
+    
+    // Quick actions
+    var quickSave: ControllerButton  // Default: L1
+    var quickLoad: ControllerButton  // Default: R1
+}
+```
+
+---
+
+## Save State Architecture
+
+### The Problem
+
+Traditional save states use fixed slots. If you accidentally save over your progress, it's lost.
+
+### The Solution: Stack-Based History
+
+```
+Save Stack (configurable: 5/10/15 slots)
+┌─────────────────────────────────────┐
+│ [0] Latest - Level 3-2 @ 2:34 PM    │ ← Load picks this by default
+│ [1] Level 3-1 @ 2:31 PM             │
+│ [2] Level 2-4 @ 2:28 PM             │
+│ [3] Level 2-3 @ 2:25 PM             │
+│ [4] Level 2-2 @ 2:20 PM (Oldest)    │ ← Deleted on next save
+└─────────────────────────────────────┘
+```
+
+### Save State Data Model
+
+```swift
+struct SaveStateEntry: Identifiable, Codable {
+    let id: UUID
+    let gameID: String          // ROM hash
+    let profileID: UUID
+    let timestamp: Date
+    let screenshotData: Data    // JPEG thumbnail
+    let stateData: Data         // Emulator state
+    let metadata: SaveMetadata
+}
+
+struct SaveMetadata: Codable {
+    var gameName: String
+    var playTime: TimeInterval
+    var levelHint: String?      // Auto-detected if possible
+    var isAutoSave: Bool
+}
+```
+
+### Auto-Save System
+
+Auto-saves trigger on:
+1. **Level completion** (detected via RAM watch or screen analysis)
+2. **Time interval** (every N minutes, configurable)
+3. **Game pause** (when user opens menu)
+
+Auto-saves are stored separately from manual saves.
+
+### User Flow
+
+**Saving:**
+```
+Press L1 → Toast "Saved!" → Game continues (instant)
+```
+
+**Loading:**
+```
+Press R1 → Dropdown with screenshots → Select with D-pad → Press A to load
+```
+
+---
+
+## Content Transfer System
+
+### Apple TV / Android TV: Web Server
+
+When "Add Content" is selected:
+
+1. Start HTTP server on port 8080
+2. Display QR code and URL
+3. User opens URL on phone/computer
+4. Web UI allows drag-and-drop uploads
+5. Files saved to active profile's directory
+
+```
+┌──────────────────────────────────────────┐
+│  NesCaster Content Transfer              │
+│                                          │
+│        ┌──────────────┐                 │
+│        │   QR CODE    │                 │
+│        └──────────────┘                 │
+│                                          │
+│     http://192.168.1.42:8080            │
+│                                          │
+│     Same network • Auto-closes          │
+└──────────────────────────────────────────┘
+```
+
+### iPad / Android Tablet
+
+Standard file picker with multi-select support.
 
 ---
 
 ## Latency Reduction Strategies
 
 ### 1. Run-Ahead Emulation
-
-Run-ahead reduces input latency by emulating frames ahead of display, then discarding them.
 
 ```
 Traditional:
@@ -73,12 +247,10 @@ Implementation:
   5. Display frame N+1
 ```
 
-**Mesen Core Modification Required:** Add save/load state API that operates without allocation.
-
 ### 2. Input Polling Optimization
 
-- Poll input at the start of each frame, not during vsync
-- Use GameController framework's callback-based input (no polling delay)
+- Poll input at frame start, not during vsync
+- GameController framework callback-based input
 - Direct hardware polling on supported controllers
 
 ### 3. Display Pipeline
@@ -87,64 +259,33 @@ Implementation:
 Frame Ready → Metal Texture Upload → GPU Upscale → Present
                   │                       │
                   └── Use shared memory ──┘
-                       (zero-copy where possible)
 ```
 
 **Key Metal Settings:**
 - `presentsWithTransaction = false`
-- `framebufferOnly = true`  
-- Disable vsync in low-latency mode
+- `framebufferOnly = true`
 - Use `MTLDrawable.presentAfterMinimumDuration()` for frame pacing
 
 ### 4. Audio Latency
 
-- Target: 2 audio frames (~32ms at 60fps)
-- Use AudioUnit/AVAudioEngine with minimal buffer size
+- Target: 2 audio frames (~32ms)
+- AVAudioEngine with minimal buffer size
 - Sync audio to video, not vice versa
 
 ---
 
 ## 120fps Rendering Strategies
 
-The NES runs at 60.0988fps (NTSC). To achieve true 120fps output:
+The NES runs at 60.0988fps. To achieve true 120fps:
 
-### Option A: Frame Interpolation (Recommended)
-
-Generate intermediate frames using motion estimation or simple blending.
+### Frame Interpolation (Recommended)
 
 ```metal
 // Simple temporal interpolation
 float4 interpolatedFrame = mix(previousFrame, currentFrame, 0.5);
 ```
 
-**Advanced:** Motion-compensated frame interpolation (MCFI) using optical flow.
-
-### Option B: Run Core at 120fps
-
-Double the emulation speed, blend each pair of frames.
-
-```
-NES Frame 1 → Blend → Display Frame 1
-            ↘
-NES Frame 2 → Display Frame 2
-```
-
-**Pros:** True 120fps motion
-**Cons:** 2x CPU load, may affect game timing/physics
-
-### Option C: Scanline Racing (Advanced)
-
-Render the frame as the CRT would - line by line, racing the beam.
-
-```
-Scanline 0-60   → Display at T+0
-Scanline 60-120 → Display at T+8ms
-Scanline 120-180 → Display at T+16ms
-...
-```
-
-**Pros:** Lowest possible latency
-**Cons:** Complex implementation, requires variable refresh rate display
+**Advanced:** Motion-compensated frame interpolation using optical flow.
 
 ---
 
@@ -152,126 +293,72 @@ Scanline 120-180 → Display at T+16ms
 
 ### Integer Scaling
 
-NES resolution: 256×240
-4K resolution: 3840×2160
+NES: 256×240 → 4K: 3840×2160
 
-Scaling factor: `floor(3840/256) = 15x` horizontal, `floor(2160/240) = 9x` vertical
-
-Use 9× scaling (2304×2160) centered in 4K frame for perfect pixels.
+Scale factor: 9× (2304×2160 centered in 4K frame)
 
 ```metal
-// Integer scaling in shader
 float scale = min(floor(outputSize.x / inputSize.x), 
                   floor(outputSize.y / inputSize.y));
 float2 scaledSize = inputSize * scale;
 float2 offset = (outputSize - scaledSize) * 0.5;
 ```
 
-### Aspect Ratio
+### Aspect Ratio Correction
 
 NES pixel aspect ratio: 8:7 (pixels are wider than tall)
-Corrected display: 256 × (8/7) : 240 = 292:240 ≈ 1.22:1
-
----
-
-## Mesen Core Integration
-
-### Compilation for tvOS/iOS
-
-```bash
-# In Shared/mesen/
-
-# Create static library for tvOS
-xcodebuild -project MesenCore.xcodeproj \
-  -scheme MesenCore \
-  -sdk appletvos \
-  -configuration Release \
-  ARCHS="arm64"
-
-# Create static library for iOS
-xcodebuild -project MesenCore.xcodeproj \
-  -scheme MesenCore \
-  -sdk iphoneos \
-  -configuration Release \
-  ARCHS="arm64"
-```
-
-### C Bridge Interface
-
-```c
-// MesenBridge.h
-
-#ifndef MesenBridge_h
-#define MesenBridge_h
-
-#include <stdint.h>
-#include <stdbool.h>
-
-// Lifecycle
-void mesen_init(void);
-void mesen_shutdown(void);
-
-// ROM
-bool mesen_load_rom(const uint8_t* data, size_t size);
-void mesen_unload_rom(void);
-
-// Emulation
-void mesen_run_frame(void);
-void mesen_reset(bool hard_reset);
-
-// Input (bitmask: A=0, B=1, Select=2, Start=3, Up=4, Down=5, Left=6, Right=7)
-void mesen_set_input(int controller, uint8_t buttons);
-
-// Output
-const uint8_t* mesen_get_frame_buffer(void);  // Returns 256*240*4 RGBA
-const int16_t* mesen_get_audio_buffer(int* sample_count);
-
-// Save States
-size_t mesen_save_state(uint8_t* buffer, size_t buffer_size);
-bool mesen_load_state(const uint8_t* buffer, size_t size);
-
-// For run-ahead (fast save/load without allocation)
-void mesen_quick_save(void);
-void mesen_quick_load(void);
-
-#endif
-```
 
 ---
 
 ## Directory Structure
 
 ```
-NesCaster/
-├── Android/              # Android app (Kotlin + Compose)
-├── iPad/                 # iOS/iPadOS app
-├── Apple TV/             # tvOS app (primary development)
-│   └── NesCaster/
-│       ├── Core/         # Emulator bridge, input handling
-│       ├── Rendering/    # Metal renderer, shaders
-│       ├── Views/        # SwiftUI views
-│       └── Assets.xcassets
-├── Research/             # Documentation, research notes
-└── Shared/               # Shared code across platforms
-    └── mesen/            # Mesen emulator core (C++)
+~/Documents/NesCaster/
+├── Profiles/
+│   ├── {uuid-1}/                # Profile 1
+│   │   ├── profile.json         # Profile metadata
+│   │   ├── settings.json        # All settings
+│   │   ├── controller.json      # Controller mapping
+│   │   ├── ROMs/                # This profile's games
+│   │   ├── Saves/               # Save state stacks
+│   │   │   ├── {rom-hash}/
+│   │   │   │   ├── stack.json   # Stack metadata
+│   │   │   │   ├── save_001.state
+│   │   │   │   ├── save_001.png
+│   │   │   │   └── ...
+│   │   │   └── autosaves/
+│   │   └── CustomPictures/      # User-added profile pics
+│   └── {uuid-2}/                # Profile 2
+│       └── ...
+└── Shared/
+    └── ProfilePictures/         # Built-in picture library
 ```
 
 ---
 
 ## Development Phases
 
-### Phase 1: Foundation (Current)
+### Phase 1: Foundation ✅
 - [x] Project structure setup
 - [x] Basic SwiftUI UI shell
-- [x] Metal rendering pipeline (test pattern)
+- [x] Metal rendering pipeline
 - [x] Controller input handling
-- [ ] Compile Mesen core for tvOS
 
-### Phase 2: Core Integration
-- [ ] Create C bridge for Mesen
-- [ ] Load and run NES ROMs
-- [ ] Basic frame output
-- [ ] Audio output
+### Phase 2: Core Integration ✅
+- [x] C bridge for Mesen
+- [x] ROM loading (stub)
+- [x] Frame output pipeline
+- [x] Audio output (AVAudioEngine)
+
+### Phase 2.5: Profile & Save System 🔄
+- [ ] Profile data model & persistence
+- [ ] Profile selection UI
+- [ ] Animated profile pictures (Lottie)
+- [ ] Per-profile ROM directories
+- [ ] Per-profile controller mapping
+- [ ] Stack-based save state system
+- [ ] Auto-save feature
+- [ ] Web server for content transfer
 
 ### Phase 3: Performance
 - [ ] Integer scaling shader
@@ -280,25 +367,14 @@ NesCaster/
 - [ ] Audio latency optimization
 
 ### Phase 4: Features
-- [ ] Save states
 - [ ] Game library with cover art
 - [ ] Settings persistence
 - [ ] Cloud sync
 
 ### Phase 5: Polish
-- [ ] UI animations and transitions
-- [ ] Haptic feedback
-- [ ] Accessibility features
-- [ ] App Store submission
-
----
-
-## Resources
-
-- [Mesen Source Code](https://github.com/SourMesen/Mesen2)
-- [NES Dev Wiki](https://www.nesdev.org/wiki/)
-- [Apple Metal Best Practices](https://developer.apple.com/metal/)
-- [Low-Latency Gaming on Apple Platforms](https://developer.apple.com/documentation/metal/gpu_features/understanding_gpu_family_4)
+- [ ] UI animations
+- [ ] Accessibility
+- [ ] iPad/Android versions
 
 ---
 
@@ -311,4 +387,15 @@ NesCaster/
 | Audio Latency | < 32ms | Audio buffer size |
 | Memory Usage | < 100MB | Instruments profiling |
 | CPU Usage | < 30% | Single A-series core |
+| Save State | < 100ms | Save/load operation time |
+| Profile Switch | < 500ms | Full context switch |
 
+---
+
+## Resources
+
+- [Mesen Source Code](https://github.com/SourMesen/Mesen2)
+- [NES Dev Wiki](https://www.nesdev.org/wiki/)
+- [Apple Metal Best Practices](https://developer.apple.com/metal/)
+- [Lottie Animation Library](https://airbnb.io/lottie/)
+- [Network Framework (Web Server)](https://developer.apple.com/documentation/network)

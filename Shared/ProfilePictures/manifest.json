@@ -1,0 +1,117 @@
+{
+  "version": "1.0",
+  "description": "NesCaster Profile Picture Library",
+  "pictures": [
+    {
+      "id": "default_player1",
+      "name": "Player 1",
+      "type": "static",
+      "file": "Static/player1.png",
+      "category": "default",
+      "color": "#E74C3C"
+    },
+    {
+      "id": "default_player2",
+      "name": "Player 2",
+      "type": "static",
+      "file": "Static/player2.png",
+      "category": "default",
+      "color": "#3498DB"
+    },
+    {
+      "id": "default_player3",
+      "name": "Player 3",
+      "type": "static",
+      "file": "Static/player3.png",
+      "category": "default",
+      "color": "#2ECC71"
+    },
+    {
+      "id": "default_player4",
+      "name": "Player 4",
+      "type": "static",
+      "file": "Static/player4.png",
+      "category": "default",
+      "color": "#9B59B6"
+    },
+    {
+      "id": "nes_controller",
+      "name": "NES Controller",
+      "type": "static",
+      "file": "Static/nes_controller.png",
+      "category": "retro"
+    },
+    {
+      "id": "pixel_heart",
+      "name": "Pixel Heart",
+      "type": "static",
+      "file": "Static/pixel_heart.png",
+      "category": "retro"
+    },
+    {
+      "id": "pixel_star",
+      "name": "Pixel Star",
+      "type": "static",
+      "file": "Static/pixel_star.png",
+      "category": "retro"
+    },
+    {
+      "id": "mushroom",
+      "name": "Power Mushroom",
+      "type": "static",
+      "file": "Static/mushroom.png",
+      "category": "retro"
+    },
+    {
+      "id": "coin",
+      "name": "Gold Coin",
+      "type": "animated",
+      "file": "Animated/coin_spin.json",
+      "category": "retro"
+    },
+    {
+      "id": "fire",
+      "name": "Fire Flower",
+      "type": "animated",
+      "file": "Animated/fire_flower.json",
+      "category": "retro"
+    },
+    {
+      "id": "ghost",
+      "name": "Spooky Ghost",
+      "type": "animated",
+      "file": "Animated/ghost_float.json",
+      "category": "characters"
+    },
+    {
+      "id": "sword",
+      "name": "Hero Sword",
+      "type": "animated",
+      "file": "Animated/sword_shine.json",
+      "category": "characters"
+    }
+  ],
+  "categories": [
+    {
+      "id": "default",
+      "name": "Default",
+      "description": "Default player avatars"
+    },
+    {
+      "id": "retro",
+      "name": "Retro",
+      "description": "Classic gaming icons"
+    },
+    {
+      "id": "characters",
+      "name": "Characters",
+      "description": "Animated character avatars"
+    },
+    {
+      "id": "custom",
+      "name": "Custom",
+      "description": "User-uploaded pictures"
+    }
+  ]
+}
+

@@ -12,13 +12,15 @@ import MetalKit
 struct EmulatorView: View {
     
     @EnvironmentObject var appState: AppState
+    @StateObject private var emulatorCore = NESEmulatorCore()
+    @StateObject private var controllerManager = GameControllerManager()
     @State private var showingMenu = false
     @State private var menuOpacity: Double = 0
     
     var body: some View {
         ZStack {
             // Metal rendering surface
-            MetalView()
+            NESMetalView(emulatorCore: emulatorCore)
                 .ignoresSafeArea()
             
             // Pause menu overlay
@@ -28,12 +30,80 @@ struct EmulatorView: View {
             
             // Quick info overlay (fades out)
             gameInfoOverlay
+            
+            // Performance overlay (debug)
+            #if DEBUG
+            performanceOverlay
+            #endif
+        }
+        .onAppear {
+            setupControllerInput()
+            startEmulation()
+        }
+        .onDisappear {
+            emulatorCore.pause()
+        }
+        .onChange(of: controllerManager.controller1State) { _, newInput in
+            emulatorCore.setController1Input(newInput)
+        }
+        .onChange(of: controllerManager.controller2State) { _, newInput in
+            emulatorCore.setController2Input(newInput)
         }
         .onExitCommand {
-            // Menu button pressed
+            // Menu button pressed - toggle pause
             withAnimation(.easeInOut(duration: 0.2)) {
                 showingMenu.toggle()
+                if showingMenu {
+                    emulatorCore.pause()
+                } else {
+                    emulatorCore.resume()
+                }
             }
+        }
+    }
+    
+    // MARK: - Controller Setup
+    
+    private func setupControllerInput() {
+        // Connect controller to emulator
+        controllerManager.onInputChanged = { [weak emulatorCore] controller, input in
+            guard let core = emulatorCore else { return }
+            if controller == 1 {
+                core.setController1Input(input)
+            } else {
+                core.setController2Input(input)
+            }
+        }
+        
+        // Menu button shows pause menu
+        controllerManager.onMenuButtonPressed = { [self] in
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showingMenu.toggle()
+                if showingMenu {
+                    emulatorCore.pause()
+                } else {
+                    emulatorCore.resume()
+                }
+            }
+        }
+    }
+    
+    // MARK: - Emulation Control
+    
+    private func startEmulation() {
+        // If we have a current game, load and start it
+        if let game = appState.currentGame {
+            do {
+                try emulatorCore.loadROM(at: game.romPath)
+                emulatorCore.start()
+            } catch {
+                print("❌ Failed to load ROM: \(error)")
+                appState.isEmulatorRunning = false
+            }
+        } else {
+            // Demo mode - just start with test pattern
+            // The bridge generates test frames when no ROM is loaded
+            emulatorCore.start()
         }
     }
     
@@ -43,12 +113,12 @@ struct EmulatorView: View {
         VStack {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(appState.currentGame?.title ?? "Unknown Game")
+                    Text(emulatorCore.romName.isEmpty ? (appState.currentGame?.title ?? "Demo Mode") : emulatorCore.romName)
                         .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(.white)
                     
                     HStack(spacing: 16) {
-                        Label("120 fps", systemImage: "speedometer")
+                        Label("\(Int(emulatorCore.fps)) fps", systemImage: "speedometer")
                         Label("4K", systemImage: "4k.tv.fill")
                     }
                     .font(.system(size: 14, weight: .medium))
@@ -73,13 +143,37 @@ struct EmulatorView: View {
                 menuOpacity = 1
             }
             
-            DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
                 withAnimation(.easeOut(duration: 0.5)) {
                     menuOpacity = 0
                 }
             }
         }
     }
+    
+    // MARK: - Performance Overlay (Debug)
+    
+    #if DEBUG
+    private var performanceOverlay: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
+                VStack(alignment: .trailing, spacing: 4) {
+                    Text(String(format: "%.1f fps", emulatorCore.fps))
+                    Text(String(format: "%.2f ms", emulatorCore.frameTime))
+                    Text("Frame: \(emulatorCore.totalFrameCount)")
+                }
+                .font(.system(size: 12, design: .monospaced))
+                .foregroundColor(.green)
+                .padding(8)
+                .background(Color.black.opacity(0.5))
+                .cornerRadius(8)
+                .padding()
+            }
+        }
+    }
+    #endif
     
     // MARK: - Pause Menu
     
@@ -98,7 +192,7 @@ struct EmulatorView: View {
                         .foregroundColor(.white.opacity(0.5))
                         .tracking(4)
                     
-                    Text(appState.currentGame?.title ?? "")
+                    Text(emulatorCore.romName.isEmpty ? "Demo" : emulatorCore.romName)
                         .font(.system(size: 32, weight: .bold))
                         .foregroundColor(.white)
                 }
@@ -107,22 +201,30 @@ struct EmulatorView: View {
                 // Menu options
                 VStack(spacing: 12) {
                     PauseMenuButton(title: "Resume", icon: "play.fill", isPrimary: true) {
-                        withAnimation { showingMenu = false }
+                        withAnimation {
+                            showingMenu = false
+                            emulatorCore.resume()
+                        }
                     }
                     
                     PauseMenuButton(title: "Save State", icon: "square.and.arrow.down.fill") {
-                        // Save state action
+                        _ = emulatorCore.saveState(slot: 0)
                     }
                     
                     PauseMenuButton(title: "Load State", icon: "square.and.arrow.up.fill") {
-                        // Load state action
+                        _ = emulatorCore.loadState(slot: 0)
                     }
                     
-                    PauseMenuButton(title: "Settings", icon: "gearshape.fill") {
-                        // Show settings
+                    PauseMenuButton(title: "Reset", icon: "arrow.counterclockwise") {
+                        emulatorCore.reset()
+                        withAnimation {
+                            showingMenu = false
+                            emulatorCore.resume()
+                        }
                     }
                     
                     PauseMenuButton(title: "Quit Game", icon: "xmark.circle.fill", isDestructive: true) {
+                        emulatorCore.stop()
                         withAnimation(.easeInOut(duration: 0.3)) {
                             appState.isEmulatorRunning = false
                             appState.currentGame = nil
@@ -204,15 +306,26 @@ struct PauseMenuButton: View {
     }
 }
 
-// MARK: - Metal View (Placeholder)
+// MARK: - NES Metal View
 
-struct MetalView: UIViewRepresentable {
+struct NESMetalView: UIViewRepresentable {
+    let emulatorCore: NESEmulatorCore
+    
+    func makeCoordinator() -> Coordinator {
+        Coordinator(emulatorCore: emulatorCore)
+    }
     
     func makeUIView(context: Context) -> MTKView {
         let mtkView = MTKView()
-        mtkView.device = MTLCreateSystemDefaultDevice()
+        
+        guard let device = MTLCreateSystemDefaultDevice() else {
+            print("❌ Metal is not supported on this device")
+            return mtkView
+        }
+        
+        mtkView.device = device
         mtkView.colorPixelFormat = .bgra8Unorm
-        mtkView.clearColor = MTLClearColor(red: 0, green: 0, blue: 0, alpha: 1)
+        mtkView.clearColor = MTLClearColor(red: 0.02, green: 0.02, blue: 0.04, alpha: 1)
         
         // 120fps target
         mtkView.preferredFramesPerSecond = 120
@@ -222,19 +335,35 @@ struct MetalView: UIViewRepresentable {
         mtkView.enableSetNeedsDisplay = false
         mtkView.isPaused = false
         
-        // Enable high performance mode
-        if let device = mtkView.device {
-            print("🎮 Metal device: \(device.name)")
-            print("🎮 Supports 120fps: \(device.supportsFamily(.apple7))")
+        // Create renderer
+        if let renderer = MetalRenderer(mtkView: mtkView) {
+            context.coordinator.renderer = renderer
+            mtkView.delegate = renderer
+            
+            // Connect frame buffer callback
+            Task { @MainActor in
+                emulatorCore.onFrameReady = { buffer in
+                    renderer.updateFrame(pixelData: buffer)
+                }
+            }
         }
         
-        // TODO: Connect to MetalRenderer and NES core
+        print("🎮 Metal device: \(device.name)")
         
         return mtkView
     }
     
     func updateUIView(_ uiView: MTKView, context: Context) {
-        // Update view if needed
+        // View updates handled by delegate
+    }
+    
+    class Coordinator {
+        let emulatorCore: NESEmulatorCore
+        var renderer: MetalRenderer?
+        
+        init(emulatorCore: NESEmulatorCore) {
+            self.emulatorCore = emulatorCore
+        }
     }
 }
 
@@ -242,4 +371,3 @@ struct MetalView: UIViewRepresentable {
     EmulatorView()
         .environmentObject(AppState())
 }
-

@@ -3,7 +3,7 @@
 //  NesCaster
 //
 //  Bridge between Swift and Mesen C++ NES core
-//  Handles: ROM loading, frame stepping, input, save states
+//  Uses MesenBridge.h C interface for emulation
 //
 
 import Foundation
@@ -22,15 +22,31 @@ struct NESInput: OptionSet, Sendable {
     static let down   = NESInput(rawValue: 1 << 5)
     static let left   = NESInput(rawValue: 1 << 6)
     static let right  = NESInput(rawValue: 1 << 7)
+    
+    /// Convert to MesenBridge button format
+    var mesenButtons: UInt8 {
+        return rawValue
+    }
 }
 
 // MARK: - Emulator State
 
-enum EmulatorState: Sendable {
+enum EmulatorState: Sendable, Equatable {
     case idle
     case running
     case paused
     case error(String)
+    
+    static func == (lhs: EmulatorState, rhs: EmulatorState) -> Bool {
+        switch (lhs, rhs) {
+        case (.idle, .idle), (.running, .running), (.paused, .paused):
+            return true
+        case (.error(let a), .error(let b)):
+            return a == b
+        default:
+            return false
+        }
+    }
 }
 
 // MARK: - NES Emulator Core
@@ -42,13 +58,15 @@ class NESEmulatorCore: ObservableObject {
     
     @Published private(set) var state: EmulatorState = .idle
     @Published private(set) var currentROM: URL?
+    @Published private(set) var romName: String = ""
     @Published private(set) var fps: Double = 0
     @Published private(set) var frameTime: Double = 0
     
-    // MARK: - Frame Buffer
+    // MARK: - Audio Engine
     
-    /// Raw NES frame buffer (256x240 RGBA)
-    private(set) var frameBuffer = [UInt8](repeating: 0, count: 256 * 240 * 4)
+    private let audioEngine = AudioEngine()
+    
+    // MARK: - Frame Buffer
     
     /// Frame callback - called when new frame is ready
     var onFrameReady: ((_ buffer: UnsafePointer<UInt8>) -> Void)?
@@ -56,115 +74,229 @@ class NESEmulatorCore: ObservableObject {
     /// Audio callback - called when audio samples are ready
     var onAudioReady: ((_ samples: UnsafePointer<Int16>, _ count: Int) -> Void)?
     
-    // MARK: - Input State
+    // MARK: - Private State
     
-    private var controller1Input: NESInput = []
-    private var controller2Input: NESInput = []
-    
-    // MARK: - Performance Tracking
-    
+    private var emulationTask: Task<Void, Never>?
     private var lastFrameTime: CFTimeInterval = 0
     private var frameCount: Int = 0
     private var fpsUpdateTimer: CFTimeInterval = 0
     
     // MARK: - Constants
     
-    static let nesWidth = 256
-    static let nesHeight = 240
+    static let nesWidth = Int(NES_WIDTH)
+    static let nesHeight = Int(NES_HEIGHT)
     static let targetFPS = 60.099 // NTSC NES frame rate
     static let frameInterval = 1.0 / targetFPS
     
     // MARK: - Initialization
     
     init() {
-        print("🎮 NESEmulatorCore initialized")
-        // TODO: Initialize Mesen core library
-        // MesenCore.initialize()
+        print("🎮 NESEmulatorCore: Initializing...")
+        
+        // Initialize the Mesen bridge
+        if mesen_init() {
+            print("✅ NESEmulatorCore: Mesen bridge initialized")
+        } else {
+            print("❌ NESEmulatorCore: Failed to initialize Mesen bridge")
+            state = .error("Failed to initialize emulator")
+        }
+    }
+    
+    deinit {
+        // Note: deinit can't be async, so we just set state
+        // The bridge will clean up when app terminates
+    }
+    
+    /// Cleanup resources
+    func shutdown() {
+        stop()
+        mesen_shutdown()
+        print("🎮 NESEmulatorCore: Shutdown complete")
     }
     
     // MARK: - ROM Management
     
-    /// Load a ROM file
+    /// Load a ROM from file URL
     func loadROM(at url: URL) throws {
-        guard FileManager.default.fileExists(atPath: url.path) else {
+        // Stop any current emulation
+        stop()
+        
+        // Load via bridge
+        let result = mesen_load_rom_file(url.path)
+        
+        switch result {
+        case MesenLoadResult_Success:
+            currentROM = url
+            romName = url.deletingPathExtension().lastPathComponent
+            state = .paused
+            print("✅ ROM loaded: \(romName)")
+            
+        case MesenLoadResult_FileNotFound:
             throw EmulatorError.romNotFound
-        }
-        
-        // Validate ROM format
-        let data = try Data(contentsOf: url)
-        guard isValidNESROM(data) else {
+            
+        case MesenLoadResult_InvalidROM:
             throw EmulatorError.invalidROM
+            
+        case MesenLoadResult_UnsupportedMapper:
+            throw EmulatorError.loadFailed("Unsupported mapper")
+            
+        default:
+            throw EmulatorError.loadFailed("Unknown error")
         }
-        
-        currentROM = url
-        state = .paused
-        
-        print("✅ ROM loaded: \(url.lastPathComponent)")
-        print("   Size: \(data.count) bytes")
-        
-        // TODO: Pass ROM data to Mesen core
-        // MesenCore.loadROM(data.bytes, data.count)
     }
     
-    /// Validate iNES/NES 2.0 header
-    private func isValidNESROM(_ data: Data) -> Bool {
-        guard data.count >= 16 else { return false }
+    /// Load a ROM from data
+    func loadROM(data: Data, name: String = "ROM") throws {
+        stop()
         
-        // Check for "NES\x1A" magic number
-        let header = [UInt8](data.prefix(4))
-        return header == [0x4E, 0x45, 0x53, 0x1A] // "NES" + EOF
+        let result = data.withUnsafeBytes { ptr -> MesenLoadResult in
+            guard let baseAddress = ptr.baseAddress else {
+                return MesenLoadResult_Error
+            }
+            return mesen_load_rom_data(
+                baseAddress.assumingMemoryBound(to: UInt8.self),
+                data.count
+            )
+        }
+        
+        switch result {
+        case MesenLoadResult_Success:
+            currentROM = nil
+            romName = name
+            state = .paused
+            print("✅ ROM loaded from data: \(name)")
+            
+        case MesenLoadResult_InvalidROM:
+            throw EmulatorError.invalidROM
+            
+        default:
+            throw EmulatorError.loadFailed("Failed to load ROM data")
+        }
+    }
+    
+    /// Check if a ROM is currently loaded
+    var isROMLoaded: Bool {
+        return mesen_is_rom_loaded()
     }
     
     // MARK: - Emulation Control
     
     /// Start emulation
     func start() {
-        guard currentROM != nil else {
-            state = .error("No ROM loaded")
-            return
-        }
+        guard state != .running else { return }
+        
+        // Allow demo mode without ROM
+        let hasROM = isROMLoaded
         
         state = .running
+        if hasROM {
+            mesen_start()
+        }
         lastFrameTime = CACurrentMediaTime()
+        fpsUpdateTimer = lastFrameTime
+        frameCount = 0
         
-        // Start emulation loop on background thread
-        Task.detached(priority: .userInitiated) { [weak self] in
+        // Start audio engine
+        do {
+            try audioEngine.start()
+        } catch {
+            print("⚠️ Failed to start audio: \(error)")
+        }
+        
+        // Start emulation loop
+        emulationTask = Task.detached(priority: .userInitiated) { [weak self] in
             await self?.emulationLoop()
         }
+        
+        print("▶️ Emulation started (ROM: \(hasROM ? "loaded" : "demo mode"))")
     }
     
     /// Pause emulation
     func pause() {
+        guard state == .running else { return }
+        
         state = .paused
+        mesen_pause()
+        emulationTask?.cancel()
+        emulationTask = nil
+        
+        print("⏸️ Emulation paused")
     }
     
     /// Resume emulation
     func resume() {
-        guard case .paused = state else { return }
+        guard state == .paused, isROMLoaded else { return }
+        
         state = .running
+        mesen_resume()
+        lastFrameTime = CACurrentMediaTime()
+        
+        emulationTask = Task.detached(priority: .userInitiated) { [weak self] in
+            await self?.emulationLoop()
+        }
+        
+        print("▶️ Emulation resumed")
     }
     
     /// Stop emulation and unload ROM
     func stop() {
+        emulationTask?.cancel()
+        emulationTask = nil
+        
+        mesen_stop()
+        mesen_unload_rom()
+        
+        // Stop audio
+        audioEngine.stop()
+        
         state = .idle
         currentROM = nil
-        frameBuffer = [UInt8](repeating: 0, count: 256 * 240 * 4)
+        romName = ""
+        fps = 0
+        frameTime = 0
+        
+        print("⏹️ Emulation stopped")
     }
     
-    /// Reset the emulator (soft reset)
+    /// Reset the console (soft reset)
     func reset() {
-        // TODO: MesenCore.reset()
-        print("🔄 Emulator reset")
+        mesen_reset()
+        print("🔄 Console reset")
+    }
+    
+    /// Power cycle (hard reset)
+    func powerCycle() {
+        mesen_power_cycle()
+        print("🔌 Power cycle")
     }
     
     // MARK: - Emulation Loop
     
     private func emulationLoop() async {
-        while await checkIsRunning() {
+        while !Task.isCancelled {
+            // Check if still running
+            let isRunning = await MainActor.run { self.state == .running }
+            guard isRunning else { break }
+            
             let frameStart = CACurrentMediaTime()
             
-            // Run one frame
-            runFrame()
+            // Run one frame via bridge
+            mesen_run_frame()
+            
+            // Get frame buffer and notify renderer
+            if let frameBuffer = mesen_get_frame_buffer() {
+                await MainActor.run {
+                    self.onFrameReady?(frameBuffer)
+                }
+            }
+            
+            // Get audio samples and send to audio engine
+            var audioSampleCount: Int32 = 0
+            if let audioBuffer = mesen_get_audio_buffer(&audioSampleCount), audioSampleCount > 0 {
+                await MainActor.run {
+                    self.audioEngine.addSamples(audioBuffer, count: Int(audioSampleCount))
+                }
+            }
             
             // Frame timing
             let frameEnd = CACurrentMediaTime()
@@ -177,50 +309,8 @@ class NESEmulatorCore: ObservableObject {
             }
             
             // Update performance metrics
-            updatePerformanceMetrics(frameDuration: elapsed)
-        }
-    }
-    
-    /// Check if emulator is running (called from async context)
-    private func checkIsRunning() async -> Bool {
-        if case .running = state {
-            return true
-        }
-        return false
-    }
-    
-    /// Run a single frame of emulation
-    private func runFrame() {
-        // TODO: Replace with actual Mesen core call
-        // MesenCore.runFrame(controller1Input.rawValue, controller2Input.rawValue)
-        // MesenCore.getFrameBuffer(&frameBuffer)
-        
-        // For now, generate test pattern
-        generateTestFrame()
-        
-        // Notify renderer
-        frameBuffer.withUnsafeBufferPointer { ptr in
-            onFrameReady?(ptr.baseAddress!)
-        }
-    }
-    
-    /// Generate test pattern for development
-    private func generateTestFrame() {
-        frameCount += 1
-        
-        for y in 0..<Self.nesHeight {
-            for x in 0..<Self.nesWidth {
-                let index = (y * Self.nesWidth + x) * 4
-                
-                // Animated gradient pattern
-                let r = UInt8((x + frameCount * 2) % 256)
-                let g = UInt8((y + frameCount) % 256)
-                let b = UInt8((x + y + frameCount * 3) % 256)
-                
-                frameBuffer[index + 0] = r
-                frameBuffer[index + 1] = g
-                frameBuffer[index + 2] = b
-                frameBuffer[index + 3] = 255
+            await MainActor.run {
+                self.updatePerformanceMetrics(frameDuration: elapsed)
             }
         }
     }
@@ -229,58 +319,84 @@ class NESEmulatorCore: ObservableObject {
     
     /// Update controller 1 input state
     func setController1Input(_ input: NESInput) {
-        controller1Input = input
+        mesen_set_input(0, input.mesenButtons)
     }
     
     /// Update controller 2 input state
     func setController2Input(_ input: NESInput) {
-        controller2Input = input
+        mesen_set_input(1, input.mesenButtons)
     }
     
-    /// Press a button on controller 1
-    func pressButton(_ button: NESInput, controller: Int = 1) {
-        if controller == 1 {
-            controller1Input.insert(button)
-        } else {
-            controller2Input.insert(button)
+    /// Set a specific button state
+    func setButton(_ button: NESInput, pressed: Bool, controller: Int = 0) {
+        let mesenButton: NESButton
+        
+        switch button {
+        case .a: mesenButton = NESButton_A
+        case .b: mesenButton = NESButton_B
+        case .select: mesenButton = NESButton_Select
+        case .start: mesenButton = NESButton_Start
+        case .up: mesenButton = NESButton_Up
+        case .down: mesenButton = NESButton_Down
+        case .left: mesenButton = NESButton_Left
+        case .right: mesenButton = NESButton_Right
+        default: return
         }
-    }
-    
-    /// Release a button on controller 1
-    func releaseButton(_ button: NESInput, controller: Int = 1) {
-        if controller == 1 {
-            controller1Input.remove(button)
-        } else {
-            controller2Input.remove(button)
-        }
+        
+        mesen_set_button(Int32(controller), mesenButton, pressed)
     }
     
     // MARK: - Save States
     
-    /// Save current state
-    func saveState(slot: Int) throws -> Data {
-        // TODO: MesenCore.saveState()
-        print("💾 Save state to slot \(slot)")
-        return Data()
+    /// Save state to slot (0-9)
+    func saveState(slot: Int) -> Bool {
+        let success = mesen_save_state(Int32(slot))
+        if success {
+            print("💾 State saved to slot \(slot)")
+        }
+        return success
     }
     
-    /// Load a saved state
-    func loadState(slot: Int, data: Data) throws {
-        // TODO: MesenCore.loadState(data)
-        print("📂 Load state from slot \(slot)")
+    /// Load state from slot (0-9)
+    func loadState(slot: Int) -> Bool {
+        let success = mesen_load_state(Int32(slot))
+        if success {
+            print("📂 State loaded from slot \(slot)")
+        }
+        return success
+    }
+    
+    // MARK: - Quick Save/Load (for run-ahead)
+    
+    /// Quick save for run-ahead (fast, no allocation)
+    func quickSave() {
+        mesen_quick_save()
+    }
+    
+    /// Quick load for run-ahead (fast, no allocation)
+    func quickLoad() {
+        mesen_quick_load()
     }
     
     // MARK: - Performance Metrics
     
     private func updatePerformanceMetrics(frameDuration: Double) {
         frameTime = frameDuration * 1000 // Convert to ms
+        frameCount += 1
         
         let now = CACurrentMediaTime()
-        if now - fpsUpdateTimer >= 1.0 {
-            fps = Double(frameCount) / (now - fpsUpdateTimer)
+        let elapsed = now - fpsUpdateTimer
+        
+        if elapsed >= 1.0 {
+            fps = Double(frameCount) / elapsed
             frameCount = 0
             fpsUpdateTimer = now
         }
+    }
+    
+    /// Get current frame count from bridge
+    var totalFrameCount: UInt32 {
+        return mesen_get_frame_count()
     }
 }
 

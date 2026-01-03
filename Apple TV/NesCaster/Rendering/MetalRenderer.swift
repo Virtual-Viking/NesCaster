@@ -49,12 +49,10 @@ class MetalRenderer: NSObject, MTKViewDelegate {
     // Configuration
     var config = RendererConfig()
     
-    // Frame timing
+    // Frame state
     private var lastFrameTime: CFTimeInterval = 0
+    private var hasExternalFrame = false
     private var frameCount: Int = 0
-    
-    // NES frame buffer (256x240 RGBA)
-    private var nesFrameBuffer = [UInt8](repeating: 0, count: 256 * 240 * 4)
     
     // MARK: - NES Display Constants
     
@@ -194,6 +192,8 @@ class MetalRenderer: NSObject, MTKViewDelegate {
     
     /// Call this when NES core produces a new frame
     func updateFrame(pixelData: UnsafePointer<UInt8>) {
+        hasExternalFrame = true
+        
         // Copy NES frame to texture
         let region = MTLRegion(
             origin: MTLOrigin(x: 0, y: 0, z: 0),
@@ -208,28 +208,12 @@ class MetalRenderer: NSObject, MTKViewDelegate {
         )
     }
     
-    /// For testing - fill with gradient
-    func updateWithTestPattern(frame: Int) {
-        for y in 0..<Self.nesHeight {
-            for x in 0..<Self.nesWidth {
-                let index = (y * Self.nesWidth + x) * 4
-                nesFrameBuffer[index + 0] = UInt8((x + frame) % 256)     // R
-                nesFrameBuffer[index + 1] = UInt8((y + frame/2) % 256)   // G
-                nesFrameBuffer[index + 2] = UInt8((x + y + frame) % 256) // B
-                nesFrameBuffer[index + 3] = 255                           // A
-            }
-        }
-        
-        nesFrameBuffer.withUnsafeBufferPointer { ptr in
-            updateFrame(pixelData: ptr.baseAddress!)
-        }
-    }
-    
     // MARK: - MTKViewDelegate
     
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {
         config.targetResolution = SIMD2<Int32>(Int32(size.width), Int32(size.height))
         createTextures() // Recreate textures for new size
+        print("📐 Drawable size changed: \(Int(size.width))x\(Int(size.height))")
     }
     
     func draw(in view: MTKView) {
@@ -252,9 +236,7 @@ class MetalRenderer: NSObject, MTKViewDelegate {
         )
         uniformBuffer.contents().copyMemory(from: &uniforms, byteCount: MemoryLayout<ShaderUniforms>.stride)
         
-        // Test pattern for development
         frameCount += 1
-        updateWithTestPattern(frame: frameCount)
         
         // Render
         guard let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: renderPassDescriptor) else {
@@ -282,4 +264,3 @@ struct ShaderUniforms {
     var time: Float
     var interpolationFactor: Float
 }
-

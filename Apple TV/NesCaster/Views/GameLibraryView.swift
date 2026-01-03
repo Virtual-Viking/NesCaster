@@ -2,6 +2,8 @@
 //  GameLibraryView.swift
 //  NesCaster
 //
+//  Game library with ROM management and demo mode
+//
 
 import SwiftUI
 
@@ -9,16 +11,18 @@ struct GameLibraryView: View {
     
     @EnvironmentObject var appState: AppState
     @State private var selectedGame: Game?
-    @State private var showingFilePicker = false
+    @State private var savedGames: [Game] = []
+    @State private var showingDemoAlert = false
+    @State private var showingImportHelp = false
     
-    // Demo games for UI testing
+    // Demo games for UI testing (before ROM loading is implemented)
     private let demoGames: [Game] = [
-        Game(title: "Super Mario Bros.", romPath: URL(fileURLWithPath: ""), coverArt: nil, lastPlayed: Date()),
-        Game(title: "The Legend of Zelda", romPath: URL(fileURLWithPath: ""), coverArt: nil, lastPlayed: Date().addingTimeInterval(-86400)),
-        Game(title: "Metroid", romPath: URL(fileURLWithPath: ""), coverArt: nil, lastPlayed: Date().addingTimeInterval(-172800)),
-        Game(title: "Mega Man 2", romPath: URL(fileURLWithPath: ""), coverArt: nil, lastPlayed: nil),
-        Game(title: "Castlevania", romPath: URL(fileURLWithPath: ""), coverArt: nil, lastPlayed: nil),
-        Game(title: "Contra", romPath: URL(fileURLWithPath: ""), coverArt: nil, lastPlayed: nil),
+        Game(title: "Super Mario Bros.", romPath: URL(fileURLWithPath: "/demo/smb.nes"), coverArt: nil, lastPlayed: Date()),
+        Game(title: "The Legend of Zelda", romPath: URL(fileURLWithPath: "/demo/zelda.nes"), coverArt: nil, lastPlayed: Date().addingTimeInterval(-86400)),
+        Game(title: "Metroid", romPath: URL(fileURLWithPath: "/demo/metroid.nes"), coverArt: nil, lastPlayed: Date().addingTimeInterval(-172800)),
+        Game(title: "Mega Man 2", romPath: URL(fileURLWithPath: "/demo/megaman2.nes"), coverArt: nil, lastPlayed: nil),
+        Game(title: "Castlevania", romPath: URL(fileURLWithPath: "/demo/castlevania.nes"), coverArt: nil, lastPlayed: nil),
+        Game(title: "Contra", romPath: URL(fileURLWithPath: "/demo/contra.nes"), coverArt: nil, lastPlayed: nil),
     ]
     
     private let columns = [
@@ -28,8 +32,11 @@ struct GameLibraryView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 50) {
+                // Demo Mode Section (for testing)
+                demoModeSection
+                
                 // Recent Games Section
-                if !appState.recentGames.isEmpty || true { // Always show for demo
+                if !appState.recentGames.isEmpty || !savedGames.isEmpty {
                     recentGamesSection
                 }
                 
@@ -42,6 +49,87 @@ struct GameLibraryView: View {
             .padding(.bottom, 80)
         }
         .scrollClipDisabled()
+        .alert("Demo Mode", isPresented: $showingDemoAlert) {
+            Button("Launch Demo") {
+                launchDemoMode()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("Launch the emulator in demo mode? This shows animated test patterns to verify the rendering pipeline is working correctly.")
+        }
+        .onAppear {
+            loadSavedGames()
+        }
+    }
+    
+    // MARK: - Demo Mode Section
+    
+    private var demoModeSection: some View {
+        VStack(alignment: .leading, spacing: 24) {
+            sectionHeader(title: "Quick Start", icon: "bolt.fill")
+            
+            HStack(spacing: 30) {
+                // Demo Mode Button
+                Button(action: { showingDemoAlert = true }) {
+                    HStack(spacing: 16) {
+                        ZStack {
+                            RoundedRectangle(cornerRadius: 12)
+                                .fill(
+                                    LinearGradient(
+                                        colors: [
+                                            Color(red: 0.95, green: 0.3, blue: 0.4),
+                                            Color(red: 0.85, green: 0.2, blue: 0.5)
+                                        ],
+                                        startPoint: .topLeading,
+                                        endPoint: .bottomTrailing
+                                    )
+                                )
+                                .frame(width: 60, height: 60)
+                            
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 24, weight: .semibold))
+                                .foregroundColor(.white)
+                        }
+                        
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Demo Mode")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                            
+                            Text("Test rendering pipeline")
+                                .font(.system(size: 14))
+                                .foregroundColor(.white.opacity(0.5))
+                        }
+                    }
+                    .padding(16)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16)
+                            .fill(.ultraThinMaterial.opacity(0.5))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 16)
+                                    .stroke(Color.white.opacity(0.1), lineWidth: 1)
+                            )
+                    )
+                }
+                .buttonStyle(ScaleButtonStyle())
+                
+                // FPS Counter Info
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack(spacing: 8) {
+                        Circle()
+                            .fill(Color.green)
+                            .frame(width: 8, height: 8)
+                        Text("Ready")
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.green)
+                    }
+                    
+                    Text("Metal renderer initialized")
+                        .font(.system(size: 12))
+                        .foregroundColor(.white.opacity(0.4))
+                }
+            }
+        }
     }
     
     // MARK: - Recent Games
@@ -52,9 +140,19 @@ struct GameLibraryView: View {
             
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 30) {
-                    ForEach(demoGames.prefix(3)) { game in
+                    // Real saved games first
+                    ForEach(savedGames.prefix(3)) { game in
                         RecentGameCard(game: game) {
                             launchGame(game)
+                        }
+                    }
+                    
+                    // Then demo placeholders
+                    if savedGames.isEmpty {
+                        ForEach(demoGames.prefix(3)) { game in
+                            RecentGameCard(game: game) {
+                                showDemoGameAlert(game)
+                            }
                         }
                     }
                 }
@@ -69,12 +167,28 @@ struct GameLibraryView: View {
     
     private var allGamesSection: some View {
         VStack(alignment: .leading, spacing: 24) {
-            sectionHeader(title: "All Games", icon: "square.grid.2x2.fill")
+            HStack {
+                sectionHeader(title: "All Games", icon: "square.grid.2x2.fill")
+                
+                Spacer()
+                
+                Text("\(savedGames.count + demoGames.count) games")
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundColor(.white.opacity(0.4))
+            }
             
             LazyVGrid(columns: columns, spacing: 40) {
-                ForEach(demoGames) { game in
+                // Real games
+                ForEach(savedGames) { game in
                     GameCard(game: game) {
                         launchGame(game)
+                    }
+                }
+                
+                // Demo placeholders
+                ForEach(demoGames) { game in
+                    GameCard(game: game, isDemo: true) {
+                        showDemoGameAlert(game)
                     }
                 }
             }
@@ -87,7 +201,7 @@ struct GameLibraryView: View {
         VStack(alignment: .leading, spacing: 24) {
             sectionHeader(title: "Add Games", icon: "plus.circle.fill")
             
-            Button(action: { showingFilePicker = true }) {
+            Button(action: { showingImportHelp = true }) {
                 HStack(spacing: 20) {
                     ZStack {
                         RoundedRectangle(cornerRadius: 16)
@@ -100,18 +214,18 @@ struct GameLibraryView: View {
                     }
                     
                     VStack(alignment: .leading, spacing: 6) {
-                        Text("Import ROM Files")
+                        Text("How to Add ROMs")
                             .font(.system(size: 22, weight: .semibold))
                             .foregroundColor(.white)
                         
-                        Text("Add .nes files from your device or network")
+                        Text("Learn how to transfer .nes files to Apple TV")
                             .font(.system(size: 16))
                             .foregroundColor(.white.opacity(0.5))
                     }
                     
                     Spacer()
                     
-                    Image(systemName: "chevron.right")
+                    Image(systemName: "questionmark.circle")
                         .font(.system(size: 20, weight: .semibold))
                         .foregroundColor(.white.opacity(0.3))
                 }
@@ -126,6 +240,20 @@ struct GameLibraryView: View {
                 )
             }
             .buttonStyle(ScaleButtonStyle())
+            .alert("How to Add ROMs", isPresented: $showingImportHelp) {
+                Button("Scan for ROMs") {
+                    loadSavedGames()
+                }
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("Transfer .nes ROM files to this app's Documents folder using:\n\n• Finder (macOS) via USB\n• Third-party file managers\n• Web server upload\n\nROMs placed in the Documents folder will appear automatically.")
+            }
+            
+            // Help text
+            Text("ROMs in the app's Documents folder are detected automatically on launch.")
+                .font(.system(size: 14))
+                .foregroundColor(.white.opacity(0.3))
+                .padding(.top, 8)
         }
     }
     
@@ -148,6 +276,49 @@ struct GameLibraryView: View {
         withAnimation(.easeInOut(duration: 0.4)) {
             appState.isEmulatorRunning = true
         }
+    }
+    
+    private func launchDemoMode() {
+        appState.currentGame = nil // No game = demo mode
+        withAnimation(.easeInOut(duration: 0.4)) {
+            appState.isEmulatorRunning = true
+        }
+    }
+    
+    private func showDemoGameAlert(_ game: Game) {
+        // For demo games, just launch demo mode
+        showingDemoAlert = true
+    }
+    
+    // MARK: - ROM Management
+    
+    private func loadSavedGames() {
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        do {
+            let files = try FileManager.default.contentsOfDirectory(at: documentsURL, includingPropertiesForKeys: nil)
+            
+            savedGames = files
+                .filter { $0.pathExtension.lowercased() == "nes" }
+                .map { url in
+                    Game(
+                        title: url.deletingPathExtension().lastPathComponent,
+                        romPath: url,
+                        coverArt: nil,
+                        lastPlayed: nil
+                    )
+                }
+                .sorted { $0.title < $1.title }
+            
+            print("📚 Loaded \(savedGames.count) saved games")
+            
+        } catch {
+            print("❌ Failed to load saved games: \(error)")
+        }
+    }
+    
+    private func saveGameLibrary() {
+        // TODO: Persist game metadata (play times, cover art, etc.)
     }
 }
 
@@ -235,6 +406,7 @@ struct RecentGameCard: View {
 
 struct GameCard: View {
     let game: Game
+    var isDemo: Bool = false
     let action: () -> Void
     
     @Environment(\.isFocused) var isFocused
@@ -267,6 +439,24 @@ struct GameCard: View {
                     Text(String(game.title.prefix(1)))
                         .font(.system(size: 80, weight: .bold, design: .rounded))
                         .foregroundColor(accentColor.opacity(0.5))
+                    
+                    // Demo badge
+                    if isDemo {
+                        VStack {
+                            HStack {
+                                Spacer()
+                                Text("DEMO")
+                                    .font(.system(size: 10, weight: .bold))
+                                    .foregroundColor(.white.opacity(0.8))
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                                    .background(Color.black.opacity(0.5))
+                                    .cornerRadius(4)
+                                    .padding(8)
+                            }
+                            Spacer()
+                        }
+                    }
                     
                     // Play overlay
                     if isFocused {
@@ -325,4 +515,3 @@ struct ScaleButtonStyle: ButtonStyle {
         .environmentObject(AppState())
         .preferredColorScheme(.dark)
 }
-

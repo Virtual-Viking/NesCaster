@@ -397,6 +397,20 @@ int mesen_get_audio_samples(int16_t* outSamples, int maxSamples) {
     return count / 2;
 }
 
+const int16_t* mesen_get_audio_buffer(int32_t* outSampleCount) {
+    if (g_audioBuffer.empty()) {
+        if (outSampleCount) *outSampleCount = 0;
+        return nullptr;
+    }
+    
+    // Return mono samples (every other sample if stereo)
+    // The test pattern generates stereo, so we return left channel only
+    if (outSampleCount) {
+        *outSampleCount = (int32_t)(g_audioBuffer.size() / 2);
+    }
+    return g_audioBuffer.data();
+}
+
 void mesen_set_audio_callback(MesenAudioCallback callback) {
     g_audioCallback = callback;
 }

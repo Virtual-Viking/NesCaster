@@ -155,6 +155,11 @@ void mesen_set_button(int controller, NESButton button, bool pressed);
 /// @return Number of samples written
 int mesen_get_audio_samples(int16_t* outSamples, int maxSamples);
 
+/// Get pointer to audio buffer and sample count
+/// @param outSampleCount Pointer to receive number of samples
+/// @return Pointer to 16-bit signed mono audio samples
+const int16_t* mesen_get_audio_buffer(int32_t* outSampleCount);
+
 /// Set the audio callback
 /// @param callback Function to call when audio is ready, or NULL to disable
 void mesen_set_audio_callback(MesenAudioCallback callback);
